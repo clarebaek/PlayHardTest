@@ -73,6 +73,10 @@ public class BubbleManager : MonoSingleton<BubbleManager>
     private void OnGetFromPool(GameObject bubble)
     {
         bubble.SetActive(true); // 버블 활성화
+        if (bubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
+        {
+            rigidbody.bodyType = RigidbodyType2D.Kinematic;
+        }
         bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
 
@@ -83,6 +87,10 @@ public class BubbleManager : MonoSingleton<BubbleManager>
     {
         bubble.SetActive(false); // 버블 비활성화
         // 버블의 상태를 초기화하여 다음 사용을 준비합니다.
+        if (bubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
+        {
+            rigidbody.bodyType = RigidbodyType2D.Kinematic;
+        }
         bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
 

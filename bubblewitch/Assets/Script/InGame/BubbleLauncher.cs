@@ -173,9 +173,6 @@ public class BubbleLauncher : MonoBehaviour
             currentBubble.transform.position = launchPoint.position;
             currentBubble.transform.rotation = Quaternion.identity;
 
-            // OnGetFromPool에서 대부분 초기화되므로 여기서는 특별한 코드가 필요하지 않음.
-            // Rigidbody2D, Collider2D 상태는 ObjectPoolManager의 OnGetFromPool에서 관리.
-
             canLaunch = true;
         }
         else
@@ -195,13 +192,10 @@ public class BubbleLauncher : MonoBehaviour
 
         Vector2 launchDirection = (worldTouchPosition - launchPoint.position).normalized;
 
-        Rigidbody2D rb = currentBubble.GetComponent<Rigidbody2D>();
-        if (rb != null)
+        if (currentBubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
         {
-            rb.bodyType = RigidbodyType2D.Dynamic;
-            rb.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
-            Debug.Log($"<color=red><b>LaunchBubble Called! Current Bubble: {currentBubble?.name ?? "NULL"}, CanLaunch: {canLaunch} force : {launchDirection * launchForce }</b></color>");
-
+            rigidbody.bodyType = RigidbodyType2D.Dynamic;
+            rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         }
 
         StartCoroutine(SpawnNextBubbleAfterDelay(0.5f));
