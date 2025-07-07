@@ -118,7 +118,7 @@ public class BubbleManager : MonoSingleton<BubbleManager>
         //*------------------------------------------------------------------------
         //첫시작시 좌우 N개씩 생성
         float x = 0;
-        float y = 0;
+        float y = 4;
         for(int i = 0; i<16; i++)
         {
             var bubble = _bubblePool.Get();
