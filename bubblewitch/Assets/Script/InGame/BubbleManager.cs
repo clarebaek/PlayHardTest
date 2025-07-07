@@ -126,6 +126,7 @@ public class BubbleManager : MonoSingleton<BubbleManager>
             {
                 _bubble.Add(bubbleScript);
                 bubble.transform.position = new Vector2(x, y);
+                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
             }
             x = (x + 1) % 9;
             y = x == 0 ? y + 1 : y;
