@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class BubbleLauncher : MonoBehaviour
 {
@@ -8,14 +10,14 @@ public class BubbleLauncher : MonoBehaviour
 
     // --- 조준선 관련 추가 변수 ---
     public LineRenderer lineRenderer; // 인스펙터에서 연결할 Line Renderer 컴포넌트
-    public int maxReflectionCount = 2; // 최대 반사 횟수
+    public int maxReflectionCount;
     public LayerMask collisionLayer; // 레이캐스트가 감지할 벽/버블 레이어 (예: Wall, Bubble)
 
     private GameObject currentBubble;
     private bool canLaunch = true;
 
     // Line Renderer의 시작점과 끝점 개수
-    private Vector3[] linePoints;
+    private List<Vector2> _linePoints = new List<Vector2>();
 
     void Start()
     {
@@ -106,7 +108,7 @@ public class BubbleLauncher : MonoBehaviour
         if (lineRenderer == null) return;
 
         lineRenderer.enabled = true; // 조준선 활성화
-        linePoints = new Vector3[maxReflectionCount + 2]; // 시작점 + 반사점들 + 마지막 예측점
+        _linePoints.Clear();// 시작점 + 반사점들 + 마지막 예측점
 
         Vector3 startPosition = launchPoint.position;
         Vector3 worldTouchPosition = Camera.main.ScreenToWorldPoint(new Vector3(touchPosition.x, touchPosition.y, Camera.main.nearClipPlane));
@@ -122,7 +124,7 @@ public class BubbleLauncher : MonoBehaviour
             return;
         }
 
-        linePoints[0] = startPosition;
+        _linePoints.Add(startPosition);
         int currentReflectionCount = 0;
         Vector2 currentOrigin = startPosition;
         Vector2 currentDirection = direction;
@@ -131,36 +133,65 @@ public class BubbleLauncher : MonoBehaviour
         {
             // Raycast를 쏴서 충돌 여부 확인
             // Physics2D.Raycast(시작점, 방향, 최대 거리, 충돌 레이어)
-            RaycastHit2D hit = Physics2D.Raycast(currentOrigin, currentDirection, 100f, collisionLayer); // 100f는 최대 레이 길이
+            bool bHitWall = _CheckRay(currentOrigin, currentDirection, "Wall", out var hitWall);
+            bool bHitBubble = _CheckRay(currentOrigin, currentDirection, "Bubble", out var hitBubble);
 
-            if (hit.collider != null)
+            if(bHitBubble == true)
             {
+                // 버블충돌
+
+                var gridAxis = GridManager.Instance.GetGridPosition(hitBubble.point);
+                var gridPos = GridManager.Instance.GetWorldPosition(gridAxis.x, gridAxis.y);
+                _linePoints.Add(gridPos);// hitBubble.point;
+                currentReflectionCount++;
+                break; // 더 이상 반사되지 않으므로 루프 종료
+            }
+
+            if(bHitWall == false && bHitBubble == false)
+            {
+                // 충돌하지 않았다면 직선으로 쭉 뻗어 나감
+                _linePoints.Add(currentOrigin + currentDirection * 100f); // 최대 길이까지 그림
+                currentReflectionCount++;
+                break; // 더 이상 반사되지 않으므로 루프 종료
+            }
+
+            if (bHitWall == true)
+            {
+                // 벽충돌
+
                 // 충돌 지점을 Line Renderer에 추가
-                linePoints[i + 1] = hit.point;
+                _linePoints.Add(hitWall.point);
                 currentReflectionCount++;
 
                 // 벽에 부딪혔을 때 반사 방향 계산
-                currentDirection = Vector2.Reflect(currentDirection, hit.normal);
-                currentOrigin = hit.point + currentDirection * 0.01f; // 충돌 지점에서 살짝 떨어진 곳에서 다음 레이 시작 (겹침 방지)
+                currentDirection = Vector2.Reflect(currentDirection, hitWall.normal);
+                currentOrigin = hitWall.point + currentDirection * 0.01f; // 충돌 지점에서 살짝 떨어진 곳에서 다음 레이 시작 (겹침 방지)
 
                 // 버블(원형)이 벽에 닿았을 때의 정확한 반사 지점을 고려하기 위해 hit.point에서 버블 반지름만큼 떨어진 곳을 계산할 수 있음
                 // 하지만 시각적인 조준선에서는 hit.point만으로도 충분함.
             }
-            else
-            {
-                // 충돌하지 않았다면 직선으로 쭉 뻗어 나감
-                linePoints[i + 1] = currentOrigin + currentDirection * 100f; // 최대 길이까지 그림
-                currentReflectionCount++;
-                break; // 더 이상 반사되지 않으므로 루프 종료
-            }
         }
 
         // Line Renderer의 점 개수 설정 및 위치 업데이트
-        lineRenderer.positionCount = currentReflectionCount + 1;
+        lineRenderer.positionCount = _linePoints.Count;
         for (int i = 0; i < lineRenderer.positionCount; i++)
         {
-            lineRenderer.SetPosition(i, linePoints[i]);
+            var pos = _linePoints.ElementAtOrDefault(i);
+            if(pos != Vector2.zero)
+            {
+                lineRenderer.SetPosition(i, pos);
+            }
+            else
+            {
+                return;
+            }
         }
+    }
+
+    private bool _CheckRay(Vector2 origin, Vector2 direction, string layerName, out RaycastHit2D hit)
+    {
+        hit = Physics2D.Raycast(origin, direction, 100f, LayerMask.GetMask(layerName));
+        return hit.collider != null;
     }
 
 
@@ -173,7 +204,15 @@ public class BubbleLauncher : MonoBehaviour
             currentBubble.transform.position = launchPoint.position;
             currentBubble.transform.rotation = Quaternion.identity;
 
+            currentBubble.layer = LayerMask.NameToLayer("Default");
+
             canLaunch = true;
+
+            // 버블의 타입을 설정한다.
+            if (currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
+            {
+                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
+            }
         }
         else
         {
@@ -185,18 +224,26 @@ public class BubbleLauncher : MonoBehaviour
     {
         if (currentBubble == null) return;
 
-        canLaunch = false;
-
         Vector3 worldTouchPosition = Camera.main.ScreenToWorldPoint(new Vector3(touchPosition.x, touchPosition.y, Camera.main.nearClipPlane));
         worldTouchPosition.z = 0;
 
         Vector2 launchDirection = (worldTouchPosition - launchPoint.position).normalized;
 
+        if(launchDirection.y < 0)
+        {
+            // 반대로 쏘는것임으로 쏘지않는다.
+            return;
+        }
+
+        canLaunch = false;
+
+        currentBubble.layer = LayerMask.NameToLayer("Bubble");
         if (currentBubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
         {
             rigidbody.bodyType = RigidbodyType2D.Dynamic;
             rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         }
+        currentBubble = null;
 
         StartCoroutine(SpawnNextBubbleAfterDelay(0.5f));
     }

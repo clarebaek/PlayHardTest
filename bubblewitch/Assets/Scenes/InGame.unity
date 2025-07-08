@@ -494,7 +494,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   offsetX: 0
   offsetY: 5
-  gridRows: 15
+  gridRows: 9
   gridCols: 10
   bubbleRadius: 0.5
 --- !u!1 &735078476

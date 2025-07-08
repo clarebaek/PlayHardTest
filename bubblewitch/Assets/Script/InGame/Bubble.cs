@@ -76,7 +76,7 @@ public class Bubble : MonoBehaviour
         if (rb != null)
         {
             var gridPos = GridManager.Instance.GetGridPosition(this.transform.position);
-            GridManager.Instance.PlaceBubble(this.gameObject, gridPos.x, gridPos.y);
+            GridManager.Instance.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched : true);
         }
         // 콜라이더를 비활성화하면 다른 버블이 이 버블을 통과할 수 있으므로,
         // 보통은 비활성화하지 않고 그리드에 붙인 후 다른 처리 (예: Sorting Order 변경)를 합니다.

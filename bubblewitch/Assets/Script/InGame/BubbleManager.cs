@@ -5,17 +5,19 @@ using UnityEngine.Pool;
 
 public enum eBubbleType
 {
+    NONE = -1,
+
     NORMAL_START = 0,
-    NORMAL_RED,         // 일반 빨간색 버블
+    NORMAL_RED = NORMAL_START,         // 일반 빨간색 버블
     NORMAL_YELLOW,      // 요정 노란색 버블
     NORMAL_BLUE,        // 일반 파란색 버블
-    NORMAL_END,
+    NORMAL_END = NORMAL_BLUE,
 
     FAIRY_START,
-    FAIRY_RED,          // 요정 빨간색 버블
+    FAIRY_RED = FAIRY_START,          // 요정 빨간색 버블
     FAIRY_YELLOW,       // 요정 노란색 버블
     FAIRY_BLUE,         // 요정 파란색 버블
-    FAIRY_END,
+    FAIRY_END = FAIRY_BLUE,
 
     BOMB,               // 맵에서 생성되는 폭탄버블 --> 1칸 제거
     CAT_BOMB,           // 고양이가 만들어준 폭탄버블 --> 2칸 제거
