@@ -118,19 +118,57 @@ public class GridManager : MonoBehaviour
 
         if(isLaunched == true)
         {
+            if (bubble.TryGetComponent<Bubble>(out var bubbleScript))
+            {
+                switch(bubbleScript.bubbleType)
+                {
+                    case eBubbleType.CAT_BOMB:
+                        CatBombTypeProcess();
+                        break;
+                    case eBubbleType.BOMB:
+                        BombTypeProcess();
+                        break;
+                    case eBubbleType.FAIRY:
+                    case eBubbleType.NORMAL:
+                    default:
+                        NormalTypeProcess();
+                        break;
+                };
+            }
+        }
+
+        return;
+
+        void NormalTypeProcess()
+        {
             var popList = FindMatchingBubbles(new Vector2Int(col, row));
+            ProcessPopList(popList , false);
+        }
+
+        void CatBombTypeProcess()
+        {
+            var popList = FindBombRange(new Vector2Int(col, row), 2);
+            ProcessPopList(popList, true);
+        }
+
+        void BombTypeProcess()
+        {
+            var popList = FindBombRange(new Vector2Int(col, row), 1);
+            ProcessPopList(popList, true);
+        }
+
+        void ProcessPopList(List<GameObject> popList, bool unconditionally)
+        {
             popList = popList.Distinct().ToList();
-            if (popList.Count >= 3)
+            if (popList.Count >= 3 || unconditionally == true)
             {
                 PopBubbles(popList);
             }
             else
             {
-                StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+                StageManager.Instance.ReloadBubble();
             }
         }
-
-        return;
     }
     /// <summary>
     /// 특정 그리드 위치에서 시작하여 같은 색상의 연결된 버블들을 모두 찾습니다. (BFS/DFS)
@@ -194,6 +232,77 @@ public class GridManager : MonoBehaviour
                     }
                 }
             }
+        }
+
+        return matchingBubbles;
+    }
+
+    public List<GameObject> FindBombRange(Vector2Int startGridPos, int range)
+    {
+        GameObject startBubble = GetBubbleAtGrid(startGridPos.x, startGridPos.y);
+        if (startBubble == null)
+        {
+            // Debug.LogWarning($"FindMatchingBubbles: 시작 위치 ({startGridPos.x},{startGridPos.y})에 버블이 없습니다.");
+            return new List<GameObject>(); // 빈 리스트 반환
+        }
+
+        var startBubbleController = startBubble.GetComponent<Bubble>();
+        if (startBubbleController == null || startBubbleController.bubbleType == eBubbleType.NONE)
+        {
+            // Debug.LogWarning($"FindMatchingBubbles: 시작 버블에 BubbleController가 없거나 색상이 없습니다.");
+            return new List<GameObject>();
+        }
+
+        List<GameObject> matchingBubbles = new List<GameObject>();
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>(); // 이미 방문한 그리드 위치 기록
+
+        queue.Enqueue(startGridPos);
+        visited.Add(startGridPos);
+        matchingBubbles.Add(startBubble);
+
+        while (range>0)
+        {
+            range--;
+            Queue<Vector2Int> newQueue = new Queue<Vector2Int>();
+            while (queue.Count > 0)
+            {
+                Vector2Int currentGridPos = queue.Dequeue();
+
+                // 현재 버블의 인접한 6방향 버블 탐색
+                Vector2Int[] offsets = (currentGridPos.y % 2 == 0) ? evenRowNeighbors : oddRowNeighbors;
+
+                foreach (Vector2Int offset in offsets)
+                {
+                    int neighborCol = currentGridPos.x + offset.x;
+                    int neighborRow = currentGridPos.y + offset.y;
+                    Vector2Int neighborGridPos = new Vector2Int(neighborCol, neighborRow);
+
+                    // 유효한 그리드 범위 내에 있고, 아직 방문하지 않았는지 확인
+                    if (neighborCol >= 0 && neighborCol < gridCols &&
+                        neighborRow >= 0 && neighborRow < gridRows &&
+                        !visited.Contains(neighborGridPos))
+                    {
+                        GameObject neighborBubble = GetBubbleAtGrid(neighborCol, neighborRow);
+                        if (neighborBubble != null)
+                        {
+                            var neighborController = neighborBubble.GetComponent<Bubble>();
+                            // 이웃 버블이 존재하고, BubbleController가 있으며, 색상이 같으면
+                            if (neighborController != null)
+                            {
+                                visited.Add(neighborGridPos);
+                                matchingBubbles.Add(neighborBubble);
+
+                                if(range != 0)
+                                {
+                                    newQueue.Enqueue(neighborGridPos);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            queue = newQueue;
         }
 
         return matchingBubbles;
@@ -295,17 +404,19 @@ public class GridManager : MonoBehaviour
                 }
             }
 
-            Rigidbody2D rb = dropBubble.GetComponent<Rigidbody2D>();
+            if (dropBubble.TryGetComponent<CircleCollider2D>(out var collider))
+            {
+                collider.isTrigger = true;
+            }
+
+                Rigidbody2D rb = dropBubble.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
                 rb.bodyType = RigidbodyType2D.Dynamic; // 물리 시뮬레이션 다시 활성화
                 rb.simulated = true;
                 rb.gravityScale = 1.0f; // 중력 적용하여 떨어뜨림
-                                        // TODO: 떨어지는 애니메이션/사운드 등 추가
-                                        // N초 후 풀로 반환하는 코루틴 시작
                 StartCoroutine(DelayedReturnToPool(dropBubble, 2f));
             }
-
         }
     }
 
@@ -454,7 +565,7 @@ public class GridManager : MonoBehaviour
     async void _StartBubbleGeneration()
     {
         await _InitBubble();
-        StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+        StageManager.Instance.ReloadBubble();
     }
 
     private async Task _InitBubble() // async UniTask로 변경하여 await 가능하게 함
@@ -496,7 +607,7 @@ public class GridManager : MonoBehaviour
     async void _BubbleGeneration()
     {
         await _RefillBubble();
-        StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+        StageManager.Instance.ReloadBubble();
     }
 
     private async Task _RefillBubble() // async UniTask로 변경하여 await 가능하게 함

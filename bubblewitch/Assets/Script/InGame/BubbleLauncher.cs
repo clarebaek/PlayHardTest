@@ -84,7 +84,10 @@ public class BubbleLauncher : MonoBehaviour
         if (inputEnded)
         {
             DisableAimLine(); // 조준선 끄기
-            LaunchBubble(inputPosition);
+            if (LaunchBubble(inputPosition) == true)
+            {
+                StageManager.Instance.ShootBubble();
+            }
         }
     }
     
@@ -253,9 +256,18 @@ public class BubbleLauncher : MonoBehaviour
         }
     }
 
-    void LaunchBubble(Vector2 touchPosition)
+    public void RemoveCurrentBubble()
     {
-        if (currentBubble == null) return;
+        if(currentBubble != null)
+        {
+            StageManager.Instance.BubbleManager.ReleaseBubble(currentBubble);
+            currentBubble = null;
+        }
+    }
+
+    bool LaunchBubble(Vector2 touchPosition)
+    {
+        if (currentBubble == null) return false;
 
         Vector3 worldTouchPosition = Camera.main.ScreenToWorldPoint(new Vector3(touchPosition.x, touchPosition.y, Camera.main.nearClipPlane));
         worldTouchPosition.z = 0;
@@ -265,7 +277,7 @@ public class BubbleLauncher : MonoBehaviour
         if(launchDirection.y < 0)
         {
             // 반대로 쏘는것임으로 쏘지않는다.
-            return;
+            return false;
         }
 
         canLaunch = false;
@@ -278,6 +290,8 @@ public class BubbleLauncher : MonoBehaviour
             rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         }
         currentBubble = null;
+
+        return true;
     }
 
     public void ChangeNextBubble()
@@ -295,6 +309,14 @@ public class BubbleLauncher : MonoBehaviour
         {
             nextBubble.transform.position = nextLaunchPoint.position;
             nextBubble.transform.rotation = Quaternion.identity;
+        }
+    }
+
+    public void ChangeCurrentBubble()
+    {
+        if(currentBubble.TryGetComponent<Bubble>(out var currentBubbleScript))
+        {
+            currentBubbleScript.SetType(eBubbleType.CAT_BOMB, eBubbleColor.SPECIAL, true);
         }
     }
 }
