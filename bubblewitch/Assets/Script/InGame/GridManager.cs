@@ -142,8 +142,11 @@ public class GridManager : MonoSingleton<GridManager>
             {
                 for (int c = 0; c < gridCols; c++)
                 {
+                    int convertC = c + offsetX;
+                    int convertR = r + offsetY;
+
                     // 홀수 행일 때 마지막 컬럼은 비워두는 경우가 많음 (그리드 모양 맞추기)
-                    if (r % 2 == 1 && c == gridCols - 1) continue;
+                    if (convertR % 2 == 1 && convertC == gridCols - 1) continue;
 
                     GameObject newBubble = BubbleManager.Instance.GetBubble();
                     if (newBubble != null)
@@ -153,7 +156,7 @@ public class GridManager : MonoSingleton<GridManager>
                         {
                             bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
                         }
-                        PlaceBubble(newBubble, c + offsetX, r + offsetY);
+                        PlaceBubble(newBubble, convertC, convertR);
                     }
                 }
             }
