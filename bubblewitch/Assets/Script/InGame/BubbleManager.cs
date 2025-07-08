@@ -29,17 +29,7 @@ public class BubbleManager : MonoSingleton<BubbleManager>
 
     private void Awake()
     {
-        _SetData();
         _InitObjectPool();
-        _InitBubble();
-    }
-
-    /// <summary>
-    /// 맵관련 데이터를 가져오도록 설정
-    /// </summary>
-    private void _SetData()
-    {
-
     }
 
     private void _InitObjectPool()
@@ -116,54 +106,5 @@ public class BubbleManager : MonoSingleton<BubbleManager>
     public void ReleaseBubble(GameObject bubble)
     {
         _bubblePool.Release(bubble);
-    }
-
-    /// <summary>
-    /// 첫 버블 생성
-    /// </summary>
-    private void _InitBubble()
-    {
-        //*------------------------------------------------------------------------
-        //첫시작시 좌우 N개씩 생성
-        float x = 0;
-        float y = 8;
-        for(int i = 0; i<16; i++)
-        {
-            var bubble = _bubblePool.Get();
-            if(bubble.TryGetComponent<Bubble>(out var bubbleScript))
-            {
-                _bubble.Add(bubbleScript);
-                bubble.transform.position = new Vector2(x, y);
-                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
-            }
-            x = (x + 1) % 9;
-            y = x == 0 ? y + 1 : y;
-        }
-        //*------------------------------------------------------------------------
-    }
-
-    /// <summary>
-    /// 버블을 쏘고나서 버블이 붙었을때 맵 처리
-    /// </summary>
-    public void CrushBubble()
-    {
-        //*------------------------------------------------------------------------
-        //1. 없앨 부분 설정
-        //*------------------------------------------------------------------------
-        //*------------------------------------------------------------------------
-        //2. 아래로 떨어질 버블 설정
-        //*------------------------------------------------------------------------
-    }
-
-    /// <summary>
-    /// 버블이 터진 뒤 새로운 버블 생성
-    /// </summary>
-    public void GenerateBubble()
-    {
-        //*------------------------------------------------------------------------
-        //y값이 홀수일때 9까지
-        //y값이 짝수일때 10까지
-        //n칸씩 push하는느낌으로
-        //*------------------------------------------------------------------------
     }
 }

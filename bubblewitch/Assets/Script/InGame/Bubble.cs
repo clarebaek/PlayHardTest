@@ -75,10 +75,8 @@ public class Bubble : MonoBehaviour
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.linearVelocity = Vector2.zero;      // 속도 0으로 설정
-            rb.angularVelocity = 0f;         // 회전 속도 0으로 설정
-            rb.bodyType = RigidbodyType2D.Kinematic; // 물리 영향 비활성화
-            // Debug.Log("버블 움직임 정지 및 Kinematic 설정 완료.");
+            var gridPos = GridManager.Instance.GetGridPosition(this.transform.position);
+            GridManager.Instance.PlaceBubble(this.gameObject, gridPos.x, gridPos.y);
         }
         // 콜라이더를 비활성화하면 다른 버블이 이 버블을 통과할 수 있으므로,
         // 보통은 비활성화하지 않고 그리드에 붙인 후 다른 처리 (예: Sorting Order 변경)를 합니다.
