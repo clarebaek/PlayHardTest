@@ -211,7 +211,7 @@ public class BubbleLauncher : MonoBehaviour
             // 버블의 타입을 설정한다.
             if (currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
             {
-                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
+                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END + 1));
             }
         }
         else
@@ -241,6 +241,7 @@ public class BubbleLauncher : MonoBehaviour
         if (currentBubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
         {
             rigidbody.bodyType = RigidbodyType2D.Dynamic;
+            rigidbody.gravityScale = 0;
             rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         }
         currentBubble = null;

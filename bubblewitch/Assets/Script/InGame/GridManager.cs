@@ -72,6 +72,7 @@ public class GridManager : MonoSingleton<GridManager>
             rigidbody.angularVelocity = 0f;
             rigidbody.bodyType = RigidbodyType2D.Kinematic;
             rigidbody.simulated = true; // 시뮬레이션은 계속 활성화
+            rigidbody.gravityScale = 0;
         }
 
         if(isLaunched == true)
@@ -227,7 +228,7 @@ public class GridManager : MonoSingleton<GridManager>
         foreach (GameObject floatingBubble in floatingBubbles)
         {
             Vector2Int gridPos = GetGridPosition(floatingBubble.transform.position);
-            RemoveBubble(gridPos.x, gridPos.y); // 그리드에서 제거
+            RemoveBubble(gridPos.x, gridPos.y, false); // 그리드에서 제거
 
             Rigidbody2D rb = floatingBubble.GetComponent<Rigidbody2D>();
             if (rb != null)
@@ -300,7 +301,7 @@ public class GridManager : MonoSingleton<GridManager>
     /// <summary>
     /// 특정 그리드 위치에서 버블을 제거합니다.
     /// </summary>
-    public void RemoveBubble(int col, int row)
+    public void RemoveBubble(int col, int row, bool isRemove = true)
     {
         if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
 
@@ -309,8 +310,11 @@ public class GridManager : MonoSingleton<GridManager>
             GameObject removedBubble = grid[col, row];
             grid[col, row] = null;
             activeBubbles.Remove(new Vector2Int(col, row));
-            // TODO: 제거된 버블을 풀로 반환하거나 파괴하는 로직
-            BubbleManager.Instance.ReleaseBubble(removedBubble);
+            if (isRemove == true)
+            {
+                // TODO: 제거된 버블을 풀로 반환하거나 파괴하는 로직
+                BubbleManager.Instance.ReleaseBubble(removedBubble);
+            }
         }
     }
 
@@ -373,8 +377,12 @@ public class GridManager : MonoSingleton<GridManager>
     // 초기 그리드 버블 설정 (테스트용)
     void Start()
     {
+        _InitBubble();
+    }
+
+    private void _InitBubble()
+    {
         // 상단에 미리 버블 채우기
-        // (GridManager.Instance.PlaceBubble 호출 시 ObjectPoolManager 필요)
         // ObjectPoolManager가 싱글톤이라면 다음과 같이 사용
         if (BubbleManager.Instance != null)
         {
@@ -394,12 +402,70 @@ public class GridManager : MonoSingleton<GridManager>
                         // 버블의 타입을 설정한다.
                         if (newBubble.TryGetComponent<Bubble>(out var bubbleScript))
                         {
-                            bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END));
+                            bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END + 1));
                         }
                         PlaceBubble(newBubble, convertC, convertR);
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// 유니티 에디터의 씬 뷰에 그리드 격자를 그립니다.
+    /// </summary>
+    void OnDrawGizmos()
+    {
+        // 기즈모를 그릴 색상 설정
+        Gizmos.color = Color.cyan; // 하늘색으로 그리드 라인 표시
+
+        // 그리드의 각 셀을 순회하며 육각형 테두리 그리기
+        for (int r = 0; r < gridRows; r++)
+        {
+            for (int c = 0; c < gridCols; c++)
+            {
+                // 홀수 행의 마지막 컬럼은 버블이 배치되지 않는 경우가 있으므로 제외 (그리드 모양에 따라 조절)
+                if (r % 2 == 1 && c == gridCols - 1) continue;
+
+                // 해당 그리드 셀의 월드 중심 위치를 계산
+                Vector2 cellCenter = GetWorldPosition(c, r);
+
+                // Gizmos.DrawWireSphere를 사용하여 버블이 놓일 위치를 원으로 표시
+                // 육각형 그리드이므로, 각 셀의 중심에 버블이 놓인다고 가정하고 원을 그립니다.
+                Gizmos.DrawWireSphere(cellCenter, bubbleRadius); // 버블의 반지름 크기로 원을 그림
+
+                // (선택 사항) 그리드 좌표 텍스트 표시 - Gizmos.DrawSphere로 작은 점을 찍고, Handles.Label 사용
+                // Handles는 UnityEditor 네임스페이스에 속하므로, 에디터 스크립트에서만 사용 가능합니다.
+                // 일반 스크립트에서는 컴파일 오류가 발생합니다.
+                // 만약 에디터 확장 스크립트로 별도 구현한다면 유용합니다.
+                // using UnityEditor;
+                // Handles.Label(cellCenter + Vector2.up * bubbleRadius * 0.5f, $"({c},{r})");
+
+                // (선택 사항) 육각형 셀의 테두리를 직접 그리기 (더 정확한 시각화)
+                // 육각형의 6개 꼭짓점 계산
+                Vector3[] hexCorners = new Vector3[6];
+                for (int i = 0; i < 6; i++)
+                {
+                    float angle_deg = 60 * i;
+                    float angle_rad = Mathf.PI / 180 * angle_deg;
+                    hexCorners[i] = cellCenter + new Vector2(bubbleRadius * Mathf.Cos(angle_rad), bubbleRadius * Mathf.Sin(angle_rad));
+                }
+
+                // 6개 선분 그리기
+                for (int i = 0; i < 6; i++)
+                {
+                    Gizmos.DrawLine(hexCorners[i], hexCorners[(i + 1) % 6]);
+                }
+            }
+        }
+
+        // 현재 버블 발사 지점 표시 (선택 사항)
+        // BubbleLauncher에서 launchPoint를 참조하고 있다면 여기서도 그릴 수 있습니다.
+        // 또는 BubbleLauncher.cs의 OnDrawGizmos에서 그려도 됩니다.
+        // if (GetComponent<BubbleLauncher>() != null && GetComponent<BubbleLauncher>().launchPoint != null)
+        // {
+        //     Gizmos.color = Color.red;
+        //     Gizmos.DrawSphere(GetComponent<BubbleLauncher>().launchPoint.position, 0.2f);
+        // }
     }
 }
