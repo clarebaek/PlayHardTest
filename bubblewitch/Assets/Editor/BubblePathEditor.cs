@@ -2,16 +2,16 @@ using UnityEngine;
 using UnityEditor;
 
 // CustomEditor 어트리뷰트를 사용하여 어떤 MonoBehaviour에 대한 에디터인지 지정합니다.
-[CustomEditor(typeof(BubbleMaker))]
-public class BubbleSpawnerEditor : Editor // Editor 클래스를 상속합니다.
+[CustomEditor(typeof(BubbleMakerPath))]
+public class BubblePathEditor : Editor // Editor 클래스를 상속합니다.
 {
     // 대상 스크립트의 참조를 가져옵니다.
-    BubbleMaker spawner;
+    BubbleMakerPath spawner;
 
     void OnEnable()
     {
         // 에디터가 활성화될 때 대상 스크립트를 가져옵니다.
-        spawner = (BubbleMaker)target;
+        spawner = (BubbleMakerPath)target;
     }
 
     // 씬 뷰에서 오브젝트가 선택되었을 때 호출됩니다.
@@ -30,7 +30,7 @@ public class BubbleSpawnerEditor : Editor // Editor 클래스를 상속합니다.
 
         if (EditorGUI.EndChangeCheck()) // 변경이 감지되었다면
         {
-            Undo.RecordObject(spawner.transform, "Move Bubble Spawner"); // Undo/Redo 기능 지원
+            Undo.RecordObject(spawner.transform, "Move Bubble Spawner Path"); // Undo/Redo 기능 지원
             spawner.transform.position = newPosition; // 위치 업데이트
 
             // 여기에 기존 BubbleSpawner의 ApplyPositionConstraints 로직을 호출하거나 직접 구현합니다.

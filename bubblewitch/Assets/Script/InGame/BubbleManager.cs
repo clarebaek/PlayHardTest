@@ -6,28 +6,28 @@ using UnityEngine.Pool;
 public enum eBubbleType
 {
     NONE = -1,
-
-    NORMAL_START = 0,
-    NORMAL_RED = NORMAL_START,         // 일반 빨간색 버블
-    NORMAL_YELLOW,      // 요정 노란색 버블
-    NORMAL_BLUE,        // 일반 파란색 버블
-    NORMAL_END = NORMAL_BLUE,
-
-    FAIRY_START,
-    FAIRY_RED = FAIRY_START,          // 요정 빨간색 버블
-    FAIRY_YELLOW,       // 요정 노란색 버블
-    FAIRY_BLUE,         // 요정 파란색 버블
-    FAIRY_END = FAIRY_BLUE,
-
-    BOMB,               // 맵에서 생성되는 폭탄버블 --> 1칸 제거
-    CAT_BOMB,           // 고양이가 만들어준 폭탄버블 --> 2칸 제거
-    GENERATOR,          // 버블이 생성되는 지점
+    NORMAL = 0,
+    FAIRY,
+    BOMB,
+    CAT_BOMB,
+    GENERATOR,          
 }
 
-public class BubbleManager : MonoSingleton<BubbleManager>
+public enum eBubbleColor
+{
+    NONE = -1,
+    RED,
+    YELLOW,
+    BLUE,
+    SPECIAL,
+    END,
+}
+
+public class BubbleManager : MonoBehaviour
 {
     private List<Bubble> _bubble = new List<Bubble>();
     private ObjectPool<GameObject> _bubblePool; // 유니티 공식 ObjectPool
+    private ObjectPool<GameObject> _dropBubblePool;
 
     private void Awake()
     {
@@ -37,6 +37,16 @@ public class BubbleManager : MonoSingleton<BubbleManager>
     private void _InitObjectPool()
     {
         _bubblePool = new ObjectPool<GameObject>(
+            CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
+            OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
+            OnReleaseToPool,      // 버블을 풀로 반환할 때 호출되는 메서드
+            OnDestroyPooledBubble, // 풀의 maxSize를 초과하거나 풀이 파괴될 때 호출되는 메서드 (선택 사항)
+            collectionCheck: false, // 컬렉션 중복 체크 (성능을 위해 false 권장)
+            defaultCapacity: 100, // 초기 용량
+            maxSize: 300      // 최대 풀 크기
+        );
+
+        _dropBubblePool = new ObjectPool<GameObject>(
             CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
             OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
             OnReleaseToPool,      // 버블을 풀로 반환할 때 호출되는 메서드
@@ -67,7 +77,11 @@ public class BubbleManager : MonoSingleton<BubbleManager>
         bubble.SetActive(true); // 버블 활성화
         if (bubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
         {
+            rigidbody.linearVelocity = Vector2.zero;
+            rigidbody.angularVelocity = 0f;
             rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            rigidbody.simulated = true; // 시뮬레이션은 계속 활성화
+            rigidbody.gravityScale = 0;
         }
         bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
@@ -81,7 +95,11 @@ public class BubbleManager : MonoSingleton<BubbleManager>
         // 버블의 상태를 초기화하여 다음 사용을 준비합니다.
         if (bubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
         {
+            rigidbody.linearVelocity = Vector2.zero;
+            rigidbody.angularVelocity = 0f;
             rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            rigidbody.simulated = true; // 시뮬레이션은 계속 활성화
+            rigidbody.gravityScale = 0;
         }
         bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
@@ -108,5 +126,21 @@ public class BubbleManager : MonoSingleton<BubbleManager>
     public void ReleaseBubble(GameObject bubble)
     {
         _bubblePool.Release(bubble);
+    }
+
+    /// <summary>
+    /// 풀에서 버블을 가져오는 공개 메서드
+    /// </summary>
+    public GameObject GetDropBubble()
+    {
+        return _dropBubblePool.Get();
+    }
+
+    /// <summary>
+    /// 버블을 풀로 반환하는 공개 메서드
+    /// </summary>
+    public void ReleaseDropBubble(GameObject bubble)
+    {
+        _dropBubblePool.Release(bubble);
     }
 }

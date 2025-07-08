@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using Utility.Singleton;
 using System.Linq;
 using System.Collections;
+using System.Threading.Tasks;
+using System;
+using System.Threading;
 
-public class GridManager : MonoSingleton<GridManager>
+public class GridManager : MonoBehaviour
 {
     /// <summary>
      /// 육각형 그리드에서 인접한 버블의 상대적 오프셋 좌표 (Odd-r Offset)
@@ -37,10 +40,32 @@ public class GridManager : MonoSingleton<GridManager>
     // 선택 사항: 특정 그리드 위치에 빠르게 접근하기 위한 Dictionary
     private Dictionary<Vector2Int, GameObject> activeBubbles;
 
+    [SerializeField]
+    private List<BubbleMaker> _bubbleMakerList = new List<BubbleMaker>();
+    private CancellationTokenSource _cancellationTokenSource;
+
     void Awake()
     {
         grid = new GameObject[gridCols, gridRows];
         activeBubbles = new Dictionary<Vector2Int, GameObject>();
+    }
+    void OnEnable()
+    {
+        // 오브젝트가 활성화될 때마다 새로운 CancellationTokenSource 생성
+        // 기존 작업이 아직 실행 중일 경우를 대비하여 새로운 소스를 만듭니다.
+        _cancellationTokenSource = new CancellationTokenSource();
+    }
+
+    void OnDisable()
+    {
+        // 오브젝트가 비활성화되거나 파괴될 때
+        // 현재 실행 중인 모든 비동기 작업을 취소합니다.
+        if (_cancellationTokenSource != null)
+        {
+            _cancellationTokenSource.Cancel(); // 취소 요청
+            _cancellationTokenSource.Dispose(); // CancellationTokenSource 리소스 해제
+            _cancellationTokenSource = null;
+        }
     }
 
     /// <summary>
@@ -56,6 +81,22 @@ public class GridManager : MonoSingleton<GridManager>
         if (grid[col, row] != null)
         {
             Debug.LogWarning($"GridManager: ({col},{row}) 위치에 이미 버블이 있습니다.");
+
+            Vector2Int[] offsets = (row % 2 == 0) ? evenRowNeighbors : oddRowNeighbors;
+            foreach (Vector2Int offset in offsets)
+            {
+                int neighborCol = col + offset.x;
+                int neighborRow = row + offset.y;
+
+                if (col < 0 || col >= gridCols || row < 0 || row >= gridRows)
+                    continue;
+                
+                if (GetBubbleAtGrid(neighborCol, neighborRow) == null)
+                {
+                    PlaceBubble(bubble, neighborCol, neighborRow, isLaunched);
+                    return;
+                }
+            }
             return;
         }
 
@@ -78,11 +119,18 @@ public class GridManager : MonoSingleton<GridManager>
         if(isLaunched == true)
         {
             var popList = FindMatchingBubbles(new Vector2Int(col, row));
-            if(popList.Count >= 3)
+            popList = popList.Distinct().ToList();
+            if (popList.Count >= 3)
             {
                 PopBubbles(popList);
             }
+            else
+            {
+                StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+            }
         }
+
+        return;
     }
     /// <summary>
     /// 특정 그리드 위치에서 시작하여 같은 색상의 연결된 버블들을 모두 찾습니다. (BFS/DFS)
@@ -105,7 +153,7 @@ public class GridManager : MonoSingleton<GridManager>
             return new List<GameObject>();
         }
 
-        var targetColor = startBubbleController.bubbleType;
+        var targetColor = startBubbleController.bubbleColor;
         List<GameObject> matchingBubbles = new List<GameObject>();
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
         HashSet<Vector2Int> visited = new HashSet<Vector2Int>(); // 이미 방문한 그리드 위치 기록
@@ -137,7 +185,7 @@ public class GridManager : MonoSingleton<GridManager>
                     {
                         var neighborController = neighborBubble.GetComponent<Bubble>();
                         // 이웃 버블이 존재하고, BubbleController가 있으며, 색상이 같으면
-                        if (neighborController != null && neighborController.bubbleType == targetColor)
+                        if (neighborController != null && neighborController.bubbleColor == targetColor)
                         {
                             visited.Add(neighborGridPos);
                             queue.Enqueue(neighborGridPos);
@@ -159,9 +207,6 @@ public class GridManager : MonoSingleton<GridManager>
     {
         if (bubblesToPop == null || bubblesToPop.Count == 0) return;
 
-        // 중복 제거 (혹시 같은 버블이 여러 번 리스트에 들어갈 경우 대비)
-        bubblesToPop = bubblesToPop.Distinct().ToList();
-
         foreach (GameObject bubble in bubblesToPop)
         {
             // 버블 오브젝트의 위치를 그리드 좌표로 변환
@@ -170,15 +215,23 @@ public class GridManager : MonoSingleton<GridManager>
             // 그리드에서 버블 제거
             RemoveBubble(gridPos.x, gridPos.y);
 
+            if (bubble.TryGetComponent<Bubble>(out var bubbleScript))
+            {
+                if(bubbleScript.bubbleType == eBubbleType.FAIRY)
+                {
+                    // TODO : 보스에게 데미지
+                    StageManager.Instance.DamageBoss(-5);
+                }
+            }
+
             // TODO: 버블 터지는 시각 효과/사운드 재생 (예: particle system, audio source)
             // Debug.Log($"버블 터짐: {bubble.name} at {gridPos}");
-
-            // 버블을 오브젝트 풀로 반환
-            BubbleManager.Instance.ReleaseBubble(bubble);
         }
 
         // TODO: 버블이 터진 후, 공중에 떠 있는 (지지되지 않는) 버블 찾기 로직 호출
         FindFloatingBubbles();
+
+        _BubbleGeneration();
     }
 
     /// <summary>
@@ -228,22 +281,31 @@ public class GridManager : MonoSingleton<GridManager>
         foreach (GameObject floatingBubble in floatingBubbles)
         {
             Vector2Int gridPos = GetGridPosition(floatingBubble.transform.position);
-            RemoveBubble(gridPos.x, gridPos.y, false); // 그리드에서 제거
+            RemoveBubble(gridPos.x, gridPos.y, true, true); // 그리드에서 제거
+            StageManager.Instance.BubbleManager.ReleaseBubble(floatingBubble);
 
-            Rigidbody2D rb = floatingBubble.GetComponent<Rigidbody2D>();
+            GameObject dropBubble = StageManager.Instance.BubbleManager.GetDropBubble();
+            dropBubble.transform.position = floatingBubble.transform.position;
+            
+            if(dropBubble.TryGetComponent<Bubble>(out var dropBubbleScript))
+            {
+                if (floatingBubble.TryGetComponent<Bubble>(out var floatingBubbleScript))
+                {
+                    dropBubbleScript.SetType(floatingBubbleScript.bubbleType, floatingBubbleScript.bubbleColor, false);
+                }
+            }
+
+            Rigidbody2D rb = dropBubble.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
                 rb.bodyType = RigidbodyType2D.Dynamic; // 물리 시뮬레이션 다시 활성화
                 rb.simulated = true;
                 rb.gravityScale = 1.0f; // 중력 적용하여 떨어뜨림
-                // TODO: 떨어지는 애니메이션/사운드 등 추가
-                // N초 후 풀로 반환하는 코루틴 시작
-                StartCoroutine(DelayedReturnToPool(floatingBubble, 2f));
+                                        // TODO: 떨어지는 애니메이션/사운드 등 추가
+                                        // N초 후 풀로 반환하는 코루틴 시작
+                StartCoroutine(DelayedReturnToPool(dropBubble, 2f));
             }
-            else
-            {
-                BubbleManager.Instance.ReleaseBubble(floatingBubble);
-            }
+
         }
     }
 
@@ -294,14 +356,14 @@ public class GridManager : MonoSingleton<GridManager>
     private IEnumerator DelayedReturnToPool(GameObject bubble, float delay)
     {
         yield return new WaitForSeconds(delay);
-        BubbleManager.Instance.ReleaseBubble(bubble);
+        StageManager.Instance.BubbleManager.ReleaseDropBubble(bubble);
     }
 
 
     /// <summary>
     /// 특정 그리드 위치에서 버블을 제거합니다.
     /// </summary>
-    public void RemoveBubble(int col, int row, bool isRemove = true)
+    public void RemoveBubble(int col, int row, bool isRelease = true, bool isFloating = false)
     {
         if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
 
@@ -310,10 +372,19 @@ public class GridManager : MonoSingleton<GridManager>
             GameObject removedBubble = grid[col, row];
             grid[col, row] = null;
             activeBubbles.Remove(new Vector2Int(col, row));
-            if (isRemove == true)
+
+            if (isRelease == true)
             {
-                // TODO: 제거된 버블을 풀로 반환하거나 파괴하는 로직
-                BubbleManager.Instance.ReleaseBubble(removedBubble);
+                foreach (var bubbleMaker in _bubbleMakerList)
+                {
+                    bubbleMaker.ReleaseBubble(removedBubble);
+                }
+
+                if (isFloating == false)
+                {
+                    // TODO: 제거된 버블을 풀로 반환하거나 파괴하는 로직
+                    StageManager.Instance.BubbleManager.ReleaseBubble(removedBubble);
+                }
             }
         }
     }
@@ -377,38 +448,86 @@ public class GridManager : MonoSingleton<GridManager>
     // 초기 그리드 버블 설정 (테스트용)
     void Start()
     {
-        _InitBubble();
+        _StartBubbleGeneration();
     }
 
-    private void _InitBubble()
+    async void _StartBubbleGeneration()
     {
-        // 상단에 미리 버블 채우기
-        // ObjectPoolManager가 싱글톤이라면 다음과 같이 사용
-        if (BubbleManager.Instance != null)
+        await _InitBubble();
+        StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+    }
+
+    private async Task _InitBubble() // async UniTask로 변경하여 await 가능하게 함
+    {
+        if (_bubbleMakerList == null || _bubbleMakerList.Count == 0)
         {
-            for (int r = 0; r < 4; r++) // 예시로 4줄만 채움
+            Debug.LogWarning("BubbleSpawnManager: BubbleMaker 리스트가 비어 있습니다.");
+            return;
+        }
+
+        if (_cancellationTokenSource != null)
+        {
+            // 취소 토큰 가져오기
+            CancellationToken token = _cancellationTokenSource.Token;
+
+            // 버블 생성 전 취소 요청이 있었는지 확인
+            if (token.IsCancellationRequested)
             {
-                for (int c = 0; c < gridCols; c++)
-                {
-                    int convertC = c + offsetX;
-                    int convertR = r + offsetY;
-
-                    // 홀수 행일 때 마지막 컬럼은 비워두는 경우가 많음 (그리드 모양 맞추기)
-                    if (convertR % 2 == 1 && convertC == gridCols - 1) continue;
-
-                    GameObject newBubble = BubbleManager.Instance.GetBubble();
-                    if (newBubble != null)
-                    {
-                        // 버블의 타입을 설정한다.
-                        if (newBubble.TryGetComponent<Bubble>(out var bubbleScript))
-                        {
-                            bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END + 1));
-                        }
-                        PlaceBubble(newBubble, convertC, convertR);
-                    }
-                }
+                Debug.Log("MakeBubble: 취소 요청 감지, 버블 생성 중단.");
+                return;
             }
         }
+
+        foreach (var bubbleMaker in _bubbleMakerList)
+        {
+            for (int i = 0; i < bubbleMaker.BubblePathCount; i++) // 각 maker당 5개의 버블 생성
+            {
+                bubbleMaker.MakeBubble();
+                // 각 버블 생성 후 일정 시간 대기
+                await Task.Delay(TimeSpan.FromSeconds(0.2f));
+            }
+            // 하나의 BubbleMaker가 모든 버블을 만든 후 다음 BubbleMaker로 넘어가기 전 대기
+            await Task.Delay(TimeSpan.FromSeconds(0.2f));
+        }
+
+        Debug.Log("모든 버블 메이커의 초기 버블 생성이 완료되었습니다.");
+    }
+
+    async void _BubbleGeneration()
+    {
+        await _RefillBubble();
+        StageManager.Instance.BubbleLauncher.SpawnNewBubble();
+    }
+
+    private async Task _RefillBubble() // async UniTask로 변경하여 await 가능하게 함
+    {
+        if (_bubbleMakerList == null || _bubbleMakerList.Count == 0)
+        {
+            Debug.LogWarning("BubbleSpawnManager: BubbleMaker 리스트가 비어 있습니다.");
+            return;
+        }
+
+        if (_cancellationTokenSource != null)
+        {
+            // 취소 토큰 가져오기
+            CancellationToken token = _cancellationTokenSource.Token;
+
+            // 버블 생성 전 취소 요청이 있었는지 확인
+            if (token.IsCancellationRequested)
+            {
+                Debug.Log("MakeBubble: 취소 요청 감지, 버블 생성 중단.");
+                return;
+            }
+        }
+
+        foreach (var bubbleMaker in _bubbleMakerList)
+        {
+            await bubbleMaker.RefillBubble();
+            // 하나의 BubbleMaker가 모든 버블을 만든 후 다음 BubbleMaker로 넘어가기 전 대기
+            await Task.Delay(TimeSpan.FromSeconds(0.2f));
+        }
+
+        Debug.Log("모든 버블 메이커의 초기 버블 생성이 완료되었습니다.");
     }
 
     /// <summary>

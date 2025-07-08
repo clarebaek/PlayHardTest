@@ -2,10 +2,12 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Utility.Singleton;
 
 public class BubbleLauncher : MonoBehaviour
 {
     public Transform launchPoint;
+    public Transform nextLaunchPoint;
     public float launchForce = 15f;
 
     // --- 조준선 관련 추가 변수 ---
@@ -14,6 +16,7 @@ public class BubbleLauncher : MonoBehaviour
     public LayerMask collisionLayer; // 레이캐스트가 감지할 벽/버블 레이어 (예: Wall, Bubble)
 
     private GameObject currentBubble;
+    private GameObject nextBubble;
     private bool canLaunch = true;
 
     // Line Renderer의 시작점과 끝점 개수
@@ -29,8 +32,6 @@ public class BubbleLauncher : MonoBehaviour
         }
         lineRenderer.positionCount = 0; // 초기에는 선을 그리지 않음
         lineRenderer.enabled = false; // 시작 시 비활성화
-
-        SpawnNewBubble();
     }
 
     void Update()
@@ -140,8 +141,8 @@ public class BubbleLauncher : MonoBehaviour
             {
                 // 버블충돌
 
-                var gridAxis = GridManager.Instance.GetGridPosition(hitBubble.point);
-                var gridPos = GridManager.Instance.GetWorldPosition(gridAxis.x, gridAxis.y);
+                var gridAxis = StageManager.Instance.GridManager.GetGridPosition(hitBubble.point);
+                var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
                 _linePoints.Add(gridPos);// hitBubble.point;
                 currentReflectionCount++;
                 break; // 더 이상 반사되지 않으므로 루프 종료
@@ -195,9 +196,12 @@ public class BubbleLauncher : MonoBehaviour
     }
 
 
-    void SpawnNewBubble()
+    public void SpawnNewBubble()
     {
-        currentBubble = BubbleManager.Instance.GetBubble();
+        if (currentBubble != null)
+            return;
+
+        currentBubble = nextBubble != null ? nextBubble : StageManager.Instance.BubbleManager.GetBubble();
 
         if (currentBubble != null && launchPoint != null)
         {
@@ -209,9 +213,38 @@ public class BubbleLauncher : MonoBehaviour
             canLaunch = true;
 
             // 버블의 타입을 설정한다.
-            if (currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
+            if (nextBubble == null)
             {
-                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL_START, (int)eBubbleType.NORMAL_END + 1));
+                if (currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
+                {
+                    bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL, (int)eBubbleType.FAIRY + 1)
+                        , (eBubbleColor)UnityEngine.Random.Range((int)eBubbleColor.RED, (int)eBubbleColor.BLUE + 1)
+                        , isLaunched: true);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("ObjectPoolManager 또는 발사 지점에 문제가 있습니다.");
+        }
+
+        nextBubble = StageManager.Instance.BubbleManager.GetBubble();
+
+        if (nextBubble != null && nextLaunchPoint != null)
+        {
+            nextBubble.transform.position = nextLaunchPoint.position;
+            nextBubble.transform.rotation = Quaternion.identity;
+
+            nextBubble.layer = LayerMask.NameToLayer("Default");
+
+            canLaunch = true;
+
+            // 버블의 타입을 설정한다.
+            if (nextBubble.TryGetComponent<Bubble>(out var bubbleScript))
+            {
+                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL, (int)eBubbleType.FAIRY + 1)
+                    , (eBubbleColor)UnityEngine.Random.Range((int)eBubbleColor.RED, (int)eBubbleColor.BLUE + 1)
+                    , isLaunched: true);
             }
         }
         else
@@ -245,13 +278,23 @@ public class BubbleLauncher : MonoBehaviour
             rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         }
         currentBubble = null;
-
-        StartCoroutine(SpawnNextBubbleAfterDelay(0.5f));
     }
 
-    IEnumerator SpawnNextBubbleAfterDelay(float delay)
+    public void ChangeNextBubble()
     {
-        yield return new WaitForSeconds(delay);
-        SpawnNewBubble();
+        GameObject tempGO = currentBubble;
+        currentBubble = nextBubble;
+        nextBubble = tempGO;
+
+        if (currentBubble != null && launchPoint != null)
+        {
+            currentBubble.transform.position = launchPoint.position;
+            currentBubble.transform.rotation = Quaternion.identity;
+        }
+        if (nextBubble != null && nextLaunchPoint != null)
+        {
+            nextBubble.transform.position = nextLaunchPoint.position;
+            nextBubble.transform.rotation = Quaternion.identity;
+        }
     }
 }

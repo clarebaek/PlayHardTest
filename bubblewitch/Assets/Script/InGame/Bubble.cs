@@ -1,36 +1,57 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class Bubble : MonoBehaviour
 {
+    [SerializeField]
+    GameObject _normalTypeGO;
+    [SerializeField]
+    GameObject _fairyTypeGO;
+    [SerializeField]
+    GameObject _bombTypeGO;
+
+    private bool _isLaunched;
     public eBubbleType bubbleType { get; private set; }
+    public eBubbleColor bubbleColor { get; private set; }
 
     private void _SetData()
     {
 
     }
 
-    public void SetType(eBubbleType type)
+    public void SetType(eBubbleType type, eBubbleColor color,bool isLaunched = false)
     {
         bubbleType = type;
+        bubbleColor = color;
+        _isLaunched = isLaunched;
         _SetView();
     }
 
     private void _SetView()
     {
-        if(TryGetComponent<SpriteRenderer>(out var sprite))
+        _normalTypeGO.SetActive(bubbleType == eBubbleType.NORMAL);
+        _fairyTypeGO.SetActive(bubbleType == eBubbleType.FAIRY);
+        _bombTypeGO.SetActive(bubbleType == eBubbleType.BOMB || bubbleType == eBubbleType.CAT_BOMB);
+
+        GameObject targetGO = bubbleType switch
         {
-            sprite.color = bubbleType switch
+            eBubbleType.NORMAL => _normalTypeGO,
+            eBubbleType.FAIRY => _fairyTypeGO,
+            eBubbleType.CAT_BOMB => _bombTypeGO,
+            eBubbleType.BOMB => _bombTypeGO,
+            _ => _normalTypeGO,
+        };
+
+        if(targetGO.TryGetComponent<SpriteRenderer>(out var sprite))
+        {
+            sprite.color = bubbleColor switch
             {
-                eBubbleType.NORMAL_RED => Color.red,
-                eBubbleType.NORMAL_YELLOW => Color.yellow,
-                eBubbleType.NORMAL_BLUE => Color.blue,
-                eBubbleType.FAIRY_RED => Color.red,
-                eBubbleType.FAIRY_YELLOW => Color.yellow,
-                eBubbleType.FAIRY_BLUE => Color.blue,
-                eBubbleType.CAT_BOMB => Color.black,
-                eBubbleType.BOMB => Color.black,
+                eBubbleColor.RED => Color.red,
+                eBubbleColor.YELLOW => Color.yellow,
+                eBubbleColor.BLUE => Color.blue,
+                eBubbleColor.SPECIAL => Color.black,
                 _ => Color.white,
             };
         }
@@ -42,6 +63,9 @@ public class Bubble : MonoBehaviour
     /// </summary>
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        if (_isLaunched == false)
+            return;
+
         // 충돌한 오브젝트의 레이어를 가져옵니다.
         int otherLayerNumber = collision.gameObject.layer;
         string otherLayerName = LayerMask.LayerToName(otherLayerNumber);
@@ -75,12 +99,22 @@ public class Bubble : MonoBehaviour
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            var gridPos = GridManager.Instance.GetGridPosition(this.transform.position);
-            GridManager.Instance.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched : true);
+            var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
+            StageManager.Instance.GridManager.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched : true);
         }
         // 콜라이더를 비활성화하면 다른 버블이 이 버블을 통과할 수 있으므로,
         // 보통은 비활성화하지 않고 그리드에 붙인 후 다른 처리 (예: Sorting Order 변경)를 합니다.
         // Collider2D col = GetComponent<Collider2D>();
         // if (col != null) col.enabled = false; // 신중하게 사용!
+    }
+
+    private void OnDrawGizmos()
+    {
+        // 오브젝트가 선택되지 않아도 항상 Gizmo가 보이도록
+        // 텍스트 색상 설정
+        Handles.color = Color.red;
+        // 텍스트를 오브젝트의 위치에 오프셋을 더하여 그립니다.
+        var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
+        Handles.Label(transform.position, $"{gridPos}");
     }
 }

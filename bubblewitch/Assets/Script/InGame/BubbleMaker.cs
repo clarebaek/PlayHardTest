@@ -1,23 +1,94 @@
 using UnityEngine;
-using UnityEditor; // Handles, Editor 네임스페이스 사용을 위해 필요
+using UnityEditor;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
-// EditorOnly 스크립트로 컴파일 시 포함되지 않도록 처리 (선택 사항)
-// [ExecuteInEditMode] // 에디터 모드에서도 Update나 OnGUI 등이 실행되도록 함 (주의해서 사용)
 public class BubbleMaker : MonoBehaviour
 {
+    const int MINIMUM_BUBBLE = 12;
+    public int BubblePathCount { get => bubblePath.Count; }
 
-    [Tooltip("스포너의 X 위치를 그리드 경계 내로 제한합니다.")]
-    public bool snapToGridX = true; // X축 그리드 스냅 활성화 여부
-    [Tooltip("스포너의 Y 위치를 그리드 경계 내로 제한합니다.")]
-    public bool snapToGridY = true; // Y축 그리드 스냅 활성화 여부
+    public List<BubbleMakerPath> bubblePath = new List<BubbleMakerPath>();
+    private Queue<GameObject> bubblePathQueue = new Queue<GameObject>();
 
-    private Vector3 lastPosition; // 이전 위치를 저장하여 변경 감지
-
-    void Awake()
+    public void MakeBubble()
     {
-        // 런타임 시에는 이 스크립트가 비활성화되거나 파괴될 수 있습니다.
-        // 스포너는 주로 에디터에서만 위치를 설정하고 런타임에는 LaunchPoint만 사용하므로.
-        // 하지만 Gizmo 기능 때문에 유지.
+        GameObject newBubble = StageManager.Instance.BubbleManager.GetBubble();
+        if (newBubble != null)
+        {
+            // 버블의 타입을 설정한다.
+            if (newBubble.TryGetComponent<Bubble>(out var bubbleScript))
+            {
+                bubbleScript.SetType((eBubbleType)UnityEngine.Random.Range((int)eBubbleType.NORMAL, (int)eBubbleType.FAIRY + 1)
+                    , (eBubbleColor)UnityEngine.Random.Range((int)eBubbleColor.RED, (int)eBubbleColor.BLUE + 1));
+            }
+
+            //*----------------------------------------------------------
+            //큐에 기존에 있는것들을 하나씩 밀어넣는다.
+            for (int i = bubblePathQueue.Count - 1; i >= 0; i--)
+            {
+                var bubble = bubblePathQueue.Dequeue();
+                BubbleLogic(bubble, i+1);
+            }
+            //*----------------------------------------------------------
+
+            //*----------------------------------------------------------
+            //새로운애 큐에 추가
+            BubbleLogic(newBubble, 0);
+            //*----------------------------------------------------------
+
+            void BubbleLogic(GameObject bubble, int index)
+            {
+                var path = bubblePath.ElementAtOrDefault(index);
+                if (path != null)
+                {
+                    var axis = StageManager.Instance.GridManager.GetGridPosition(path.transform.position);
+
+                    StageManager.Instance.GridManager.RemoveBubble(axis.x, axis.y, false);
+                    StageManager.Instance.GridManager.PlaceBubble(bubble, axis.x, axis.y);
+
+                    bubblePathQueue.Enqueue(bubble);
+                }
+                else
+                {
+                    StageManager.Instance.BubbleManager.ReleaseBubble(newBubble);
+                }
+            }
+        }
+    }
+
+    public async Task RefillBubble()
+    {
+        if (bubblePathQueue.Count >= MINIMUM_BUBBLE)
+            return;
+
+        for (int i = bubblePathQueue.Count; i < MINIMUM_BUBBLE; i++) // 각 maker당 5개의 버블 생성
+        {
+            MakeBubble();
+            // 각 버블 생성 후 일정 시간 대기
+            await Task.Delay(TimeSpan.FromSeconds(.2f));
+        }
+    }
+
+    public void ReleaseBubble(GameObject bubble)
+    {
+        if (bubblePathQueue.Contains(bubble) == true)
+        {
+            while (bubblePathQueue.Count > 0)
+            {
+                GameObject dequeuedBubble = bubblePathQueue.Dequeue();
+                Debug.Log($"'{dequeuedBubble.name}' Dequeue됨.");
+
+                // 현재 Dequeue한 버블이 우리가 찾던 버블인지 확인
+                if (dequeuedBubble == bubble)
+                {
+                    Debug.Log($"'{bubble.name}' 발견 및 Dequeue 완료.");
+                    return; // 원하는 버블을 찾았으므로 함수 종료
+                }
+            }
+        }
     }
 
     // OnDrawGizmos는 씬 뷰에 항상 기즈모를 그립니다. (오브젝트가 선택되지 않아도)
