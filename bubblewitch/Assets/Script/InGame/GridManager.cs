@@ -497,7 +497,7 @@ public class GridManager : MonoBehaviour
 
     public bool GetWallAtGrid(int col, int row)
     {
-        if (col < -1 || col >= gridCols + 2 || row < 0 || row >= gridRows + 2) return true;
+        if (col < 0 || col > gridCols || row < 0 || row > gridRows) return true;
         return false;
     }
 

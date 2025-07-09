@@ -164,14 +164,11 @@ public class BubbleLauncher : MonoBehaviour
             if (bHitWall == true)
             {
                 // 벽충돌
-
-                // 충돌 지점을 Line Renderer에 추가
-                _linePoints.Add(gridPos);
-                currentReflectionCount++;
+                //_linePoints.Add(targetPos);
+                //currentReflectionCount++;
 
                 // 벽에 부딪혔을 때 반사 방향 계산
                 currentDirection = Vector2.Reflect(currentDirection, currentDirection.x >= 0 ? Vector2.left : Vector2.right);
-                currentOrigin = currentOrigin + currentDirection * 0.01f; // 충돌 지점에서 살짝 떨어진 곳에서 다음 레이 시작 (겹침 방지)
             }
         }
 
