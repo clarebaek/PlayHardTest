@@ -2526,7 +2526,7 @@ MonoBehaviour:
   nextLaunchPoint: {fileID: 1576195744}
   launchForce: 15
   lineRenderer: {fileID: 1438513677}
-  maxReflectionCount: 2
+  maxReflectionCount: 100
   collisionLayer:
     serializedVersion: 2
     m_Bits: 128

@@ -135,17 +135,16 @@ public class BubbleLauncher : MonoBehaviour
 
         for (int i = 0; i <= maxReflectionCount; i++)
         {
-            // Raycast를 쏴서 충돌 여부 확인
-            // Physics2D.Raycast(시작점, 방향, 최대 거리, 충돌 레이어)
-            bool bHitWall = _CheckRay(currentOrigin, currentDirection, "Wall", out var hitWall);
-            bool bHitBubble = _CheckRay(currentOrigin, currentDirection, "Bubble", out var hitBubble);
+            Vector2 targetPos = currentOrigin + currentDirection;
+
+            var gridAxis = StageManager.Instance.GridManager.GetGridPosition(targetPos);
+            var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
+            bool bHitBubble = StageManager.Instance.GridManager.GetBubbleAtGrid(gridAxis.x, gridAxis.y) != null;
+            bool bHitWall = StageManager.Instance.GridManager.GetWallAtGrid(gridAxis.x, gridAxis.y);
 
             if(bHitBubble == true)
             {
                 // 버블충돌
-
-                var gridAxis = StageManager.Instance.GridManager.GetGridPosition(hitBubble.point);
-                var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
                 _linePoints.Add(gridPos);// hitBubble.point;
                 currentReflectionCount++;
                 break; // 더 이상 반사되지 않으므로 루프 종료
@@ -153,10 +152,9 @@ public class BubbleLauncher : MonoBehaviour
 
             if(bHitWall == false && bHitBubble == false)
             {
-                // 충돌하지 않았다면 직선으로 쭉 뻗어 나감
-                _linePoints.Add(currentOrigin + currentDirection * 100f); // 최대 길이까지 그림
+                _linePoints.Add(targetPos);
                 currentReflectionCount++;
-                break; // 더 이상 반사되지 않으므로 루프 종료
+                currentOrigin = targetPos;
             }
 
             if (bHitWall == true)
@@ -164,15 +162,12 @@ public class BubbleLauncher : MonoBehaviour
                 // 벽충돌
 
                 // 충돌 지점을 Line Renderer에 추가
-                _linePoints.Add(hitWall.point);
+                _linePoints.Add(gridPos);
                 currentReflectionCount++;
 
                 // 벽에 부딪혔을 때 반사 방향 계산
-                currentDirection = Vector2.Reflect(currentDirection, hitWall.normal);
-                currentOrigin = hitWall.point + currentDirection * 0.01f; // 충돌 지점에서 살짝 떨어진 곳에서 다음 레이 시작 (겹침 방지)
-
-                // 버블(원형)이 벽에 닿았을 때의 정확한 반사 지점을 고려하기 위해 hit.point에서 버블 반지름만큼 떨어진 곳을 계산할 수 있음
-                // 하지만 시각적인 조준선에서는 hit.point만으로도 충분함.
+                currentDirection = Vector2.Reflect(currentDirection, currentDirection.x >= 0 ? Vector2.left : Vector2.right);
+                currentOrigin = currentOrigin + currentDirection * 0.01f; // 충돌 지점에서 살짝 떨어진 곳에서 다음 레이 시작 (겹침 방지)
             }
         }
 
@@ -190,12 +185,6 @@ public class BubbleLauncher : MonoBehaviour
                 return;
             }
         }
-    }
-
-    private bool _CheckRay(Vector2 origin, Vector2 direction, string layerName, out RaycastHit2D hit)
-    {
-        hit = Physics2D.Raycast(origin, direction, 100f, LayerMask.GetMask(layerName));
-        return hit.collider != null;
     }
 
     public void SpawnNewBubble()

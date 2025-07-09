@@ -74,12 +74,11 @@ public class PathFollower : MonoBehaviour
             }
 
             Vector3 startWorldPosition = transform.position; // 현재 버블의 월드 위치
-            Vector3 targetLocalPosition = _path.pathPoints[_currentPointIndex];
-            Vector3 targetWorldPosition = _path.transform.position + targetLocalPosition; // 목표 월드 위치
+            Vector3 targetPosition = _path.pathPoints[_currentPointIndex];
 
             // Debug.Log($"Moving from {startWorldPosition} to {targetWorldPosition} (point {_currentPointIndex})");
 
-            float distance = Vector3.Distance(startWorldPosition, targetWorldPosition);
+            float distance = Vector3.Distance(startWorldPosition, targetPosition);
             if (distance < 0.001f) // 이미 목표 지점에 거의 도달했으면 다음 지점으로
             {
                 _currentPointIndex++;
@@ -100,14 +99,14 @@ public class PathFollower : MonoBehaviour
                 }
 
                 // 이동 보간 (Lerp 함수로 일정 속도 시뮬레이션)
-                transform.position = Vector3.Lerp(startWorldPosition, targetWorldPosition, elapsed / duration);
+                transform.position = Vector3.Lerp(startWorldPosition, targetPosition, elapsed / duration);
 
                 elapsed += Time.deltaTime;
                 await Task.Yield(); // 다음 프레임까지 대기
             }
 
             // 정확히 목표 지점에 위치시키기 (오차 보정)
-            transform.position = targetWorldPosition;
+            transform.position = targetPosition;
             _currentPointIndex++; // 다음 목표 지점으로 인덱스 증가
 
             // 닫힌 경로가 아니면서 마지막 지점에 도달했는지 확인

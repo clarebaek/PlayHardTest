@@ -492,6 +492,12 @@ public class GridManager : MonoBehaviour
         return grid[col, row];
     }
 
+    public bool GetWallAtGrid(int col, int row)
+    {
+        if (col < -1 || col >= gridCols + 2 || row < 0 || row >= gridRows + 2) return true;
+        return false;
+    }
+
     /// <summary>
     /// 그리드 좌표에 해당하는 월드 위치를 반환합니다.
     /// </summary>
