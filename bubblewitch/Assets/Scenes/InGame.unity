@@ -1130,7 +1130,7 @@ MonoBehaviour:
   offsetX: 0
   offsetY: 5
   gridRows: 12
-  gridCols: 11
+  gridCols: 10
   bubbleRadius: 0.5
   _bubbleMakerList:
   - {fileID: 1860004926}

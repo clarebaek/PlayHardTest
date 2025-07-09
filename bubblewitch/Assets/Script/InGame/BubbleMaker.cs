@@ -68,7 +68,7 @@ public class BubbleMaker : MonoBehaviour
         {
             MakeBubble();
             // 각 버블 생성 후 일정 시간 대기
-            await Task.Delay(TimeSpan.FromSeconds(.2f));
+            await Task.Delay(TimeSpan.FromSeconds(.1f));
         }
     }
 

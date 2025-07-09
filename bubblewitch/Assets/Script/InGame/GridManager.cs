@@ -402,7 +402,7 @@ public class GridManager : MonoBehaviour
             dropPath.Add(new Vector2(dropBubble.transform.position.x, dropBubble.transform.position.y));
             dropPath.Add(new Vector2(dropBubble.transform.position.x, -5));
             path.pathPoints = dropPath;
-            pathFollower.Initialize(path, 9.8f, 0);
+            pathFollower.Initialize(path, 9.8f, 0, true);
         }
     }
 
@@ -576,17 +576,20 @@ public class GridManager : MonoBehaviour
 
         foreach (var bubbleMaker in _bubbleMakerList)
         {
-            for (int i = 0; i < bubbleMaker.BubblePathCount; i++) // 각 maker당 5개의 버블 생성
-            {
-                bubbleMaker.MakeBubble();
-                // 각 버블 생성 후 일정 시간 대기
-                await Task.Delay(TimeSpan.FromSeconds(0.2f));
-            }
-            // 하나의 BubbleMaker가 모든 버블을 만든 후 다음 BubbleMaker로 넘어가기 전 대기
-            await Task.Delay(TimeSpan.FromSeconds(0.2f));
+            await _InitBubbleBubbleMaker(bubbleMaker);
         }
 
         Debug.Log("모든 버블 메이커의 초기 버블 생성이 완료되었습니다.");
+    }
+
+    private async Task _InitBubbleBubbleMaker(BubbleMaker bubbleMaker)
+    {
+        for (int i = 0; i < bubbleMaker.BubblePathCount; i++) // 각 maker당 5개의 버블 생성
+        {
+            bubbleMaker.MakeBubble();
+            // 각 버블 생성 후 일정 시간 대기
+            await Task.Delay(TimeSpan.FromSeconds(0.1f));
+        }
     }
 
     async void _BubbleGeneration()
@@ -619,11 +622,7 @@ public class GridManager : MonoBehaviour
         foreach (var bubbleMaker in _bubbleMakerList)
         {
             await bubbleMaker.RefillBubble();
-            // 하나의 BubbleMaker가 모든 버블을 만든 후 다음 BubbleMaker로 넘어가기 전 대기
-            await Task.Delay(TimeSpan.FromSeconds(0.2f));
         }
-
-        Debug.Log("모든 버블 메이커의 초기 버블 생성이 완료되었습니다.");
     }
 
     /// <summary>
