@@ -76,7 +76,7 @@ public class Bubble : MonoBehaviour
         if (otherLayerName == "Bubble")
         {
             // Debug.Log("다른 버블에 충돌하여 멈춥니다.");
-            _StopBubbleMovement();
+            //_StopBubbleMovement();
             // TODO: 버블을 그리드에 붙이는 로직 (나중에 구현)
             // 예를 들어, GridManager.AttachBubble(this.gameObject, collision.contacts[0].point);
         }
@@ -96,16 +96,7 @@ public class Bubble : MonoBehaviour
     /// </summary>
     private void _StopBubbleMovement()
     {
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb != null)
-        {
-            var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
-            StageManager.Instance.GridManager.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched : true);
-        }
-        // 콜라이더를 비활성화하면 다른 버블이 이 버블을 통과할 수 있으므로,
-        // 보통은 비활성화하지 않고 그리드에 붙인 후 다른 처리 (예: Sorting Order 변경)를 합니다.
-        // Collider2D col = GetComponent<Collider2D>();
-        // if (col != null) col.enabled = false; // 신중하게 사용!
+        //#TODO::멈춤처리
     }
 
     private void OnDrawGizmos()

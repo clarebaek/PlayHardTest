@@ -106,16 +106,6 @@ public class GridManager : MonoBehaviour
         // 버블의 월드 위치를 그리드에 맞게 설정 (버블의 Rigidbody2D는 Kinematic으로 설정)
         bubble.transform.position = GetWorldPosition(col, row);
 
-        // 버블이 그리드에 붙었으므로 Rigidbody2D를 Kinematic으로 변경하고 속도 초기화
-        if (bubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
-        {
-            rigidbody.linearVelocity = Vector2.zero;
-            rigidbody.angularVelocity = 0f;
-            rigidbody.bodyType = RigidbodyType2D.Kinematic;
-            rigidbody.simulated = true; // 시뮬레이션은 계속 활성화
-            rigidbody.gravityScale = 0;
-        }
-
         if(isLaunched == true)
         {
             if (bubble.TryGetComponent<Bubble>(out var bubbleScript))
@@ -409,14 +399,7 @@ public class GridManager : MonoBehaviour
                 collider.isTrigger = true;
             }
 
-                Rigidbody2D rb = dropBubble.GetComponent<Rigidbody2D>();
-            if (rb != null)
-            {
-                rb.bodyType = RigidbodyType2D.Dynamic; // 물리 시뮬레이션 다시 활성화
-                rb.simulated = true;
-                rb.gravityScale = 1.0f; // 중력 적용하여 떨어뜨림
-                StartCoroutine(DelayedReturnToPool(dropBubble, 2f));
-            }
+            //#TODO :: DROP BUBBLE
         }
     }
 

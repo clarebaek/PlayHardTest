@@ -198,7 +198,6 @@ public class BubbleLauncher : MonoBehaviour
         return hit.collider != null;
     }
 
-
     public void SpawnNewBubble()
     {
         if (currentBubble != null)
@@ -283,12 +282,12 @@ public class BubbleLauncher : MonoBehaviour
         canLaunch = false;
 
         currentBubble.layer = LayerMask.NameToLayer("Bubble");
-        if (currentBubble.TryGetComponent<Rigidbody2D>(out var rigidbody))
-        {
-            rigidbody.bodyType = RigidbodyType2D.Dynamic;
-            rigidbody.gravityScale = 0;
-            rigidbody.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
-        }
+        //#TODO::LAUNCH
+        PathFollower pathFollower = currentBubble.AddComponent<PathFollower>();
+        BubblePath path = currentBubble.AddComponent<BubblePath>();
+        path.pathPoints = _linePoints;
+        pathFollower.Initialize(path, launchForce, 0);
+
         currentBubble = null;
 
         return true;
