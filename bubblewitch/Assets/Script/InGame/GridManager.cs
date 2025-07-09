@@ -13,13 +13,13 @@ public class GridManager : MonoBehaviour
      /// 육각형 그리드에서 인접한 버블의 상대적 오프셋 좌표 (Odd-r Offset)
      /// 현재 행 (row)이 짝수인지 홀수인지에 따라 다릅니다.
      /// </summary>
-    private static readonly Vector2Int[] evenRowNeighbors = new Vector2Int[]
+    private static readonly Vector2Int[] oddRowNeighbors = new Vector2Int[]
     {
     new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(-1, 1),
     new Vector2Int(-1, 0), new Vector2Int(-1, -1), new Vector2Int(0, -1)
     };
 
-    private static readonly Vector2Int[] oddRowNeighbors = new Vector2Int[]
+    private static readonly Vector2Int[] evenRowNeighbors = new Vector2Int[]
     {
     new Vector2Int(1, 0), new Vector2Int(1, 1), new Vector2Int(0, 1),
     new Vector2Int(-1, 0), new Vector2Int(0, -1), new Vector2Int(1, -1)
@@ -394,12 +394,15 @@ public class GridManager : MonoBehaviour
                 }
             }
 
-            if (dropBubble.TryGetComponent<CircleCollider2D>(out var collider))
-            {
-                collider.isTrigger = true;
-            }
-
             //#TODO :: DROP BUBBLE
+            //#TODO::LAUNCH
+            List<Vector2> dropPath = new List<Vector2>();
+            PathFollower pathFollower = dropBubble.AddComponent<PathFollower>();
+            BubblePath path = dropBubble.AddComponent<BubblePath>();
+            dropPath.Add(new Vector2(dropBubble.transform.position.x, dropBubble.transform.position.y));
+            dropPath.Add(new Vector2(dropBubble.transform.position.x, -5));
+            path.pathPoints = dropPath;
+            pathFollower.Initialize(path, 9.8f, 0);
         }
     }
 
@@ -503,14 +506,18 @@ public class GridManager : MonoBehaviour
     /// </summary>
     public Vector2 GetWorldPosition(int col, int row)
     {
-        float x = col * bubbleRadius * 2;
-        float y = row * bubbleRadius * Mathf.Sqrt(3); // 겹치는 부분 고려
+        // 원래꺼
+        //float x = col * bubbleRadius * 2;
+        //float y = row * bubbleRadius * Mathf.Sqrt(3);
+        float y = row * bubbleRadius * 1.5f;
+        float x = row % 2 == 0 ?
+            col * bubbleRadius * Mathf.Sqrt(3) :
+            col * bubbleRadius * Mathf.Sqrt(3) - bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
+        //float x = col * bubbleRadius * 1.5f;
+       // float y = col % 2 == 0 ?
+        //    row * bubbleRadius * Mathf.Sqrt(3) :
+        //    row * bubbleRadius * Mathf.Sqrt(3) - bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
 
-        // 홀수 행은 X축으로 반 칸 이동
-        if (row % 2 == 1)
-        {
-            x += bubbleRadius;
-        }
         return new Vector2(x, y);
     }
 
@@ -523,24 +530,13 @@ public class GridManager : MonoBehaviour
         // RedBlobGames Hex Grid 공식 활용 (Offset Coordinates)
         // https://www.redblobgames.com/grids/hexagons/
 
-        // 대략적인 그리드 x, y 계산 (반올림 전)
-        float roughCol = worldPosition.x / (bubbleRadius * 2);
-        float roughRow = worldPosition.y / (bubbleRadius * Mathf.Sqrt(3));
-
-        // 짝수 또는 홀수 행에 따른 보정
-        // 이 부분은 정확한 육각형 좌표 변환 로직이 들어가야 합니다.
-        // 예를 들어, axial/cube coordinate로 변환 후 반올림, 다시 offset으로 변환하는 방식이 더 견고합니다.
-        // 여기서는 개념만 제시하고 실제 구현은 더 복잡할 수 있습니다.
-
-        // 임시 반환값 (실제 로직 필요)
-        int col = Mathf.RoundToInt(roughCol);
+        float roughRow = worldPosition.y / (bubbleRadius * 1.5f);
         int row = Mathf.RoundToInt(roughRow);
 
-        // 홀수 행 보정 (다시 역으로 적용)
-        if (row % 2 == 1)
-        {
-            col = Mathf.RoundToInt((worldPosition.x - bubbleRadius) / (bubbleRadius * 2));
-        }
+        float roughCol = row % 2 == 0 ?
+            worldPosition.x / (bubbleRadius * Mathf.Sqrt(3)) :
+            worldPosition.x / (bubbleRadius * Mathf.Sqrt(3)) + 0.5f;
+        int col = Mathf.RoundToInt(roughCol);
 
         return new Vector2Int(col, row);
     }
@@ -643,9 +639,6 @@ public class GridManager : MonoBehaviour
         {
             for (int c = 0; c < gridCols; c++)
             {
-                // 홀수 행의 마지막 컬럼은 버블이 배치되지 않는 경우가 있으므로 제외 (그리드 모양에 따라 조절)
-                if (r % 2 == 1 && c == gridCols - 1) continue;
-
                 // 해당 그리드 셀의 월드 중심 위치를 계산
                 Vector2 cellCenter = GetWorldPosition(c, r);
 
@@ -665,7 +658,7 @@ public class GridManager : MonoBehaviour
                 Vector3[] hexCorners = new Vector3[6];
                 for (int i = 0; i < 6; i++)
                 {
-                    float angle_deg = 60 * i;
+                    float angle_deg = 30 + 60 * i;
                     float angle_rad = Mathf.PI / 180 * angle_deg;
                     hexCorners[i] = cellCenter + new Vector2(bubbleRadius * Mathf.Cos(angle_rad), bubbleRadius * Mathf.Sin(angle_rad));
                 }

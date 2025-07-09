@@ -20,7 +20,7 @@ public class BubblePath : MonoBehaviour
     {
         if (index >= 0 && index < pathPoints.Count)
         {
-            return new Vector2(transform.position.x, transform.position.y) + pathPoints[index];
+            return pathPoints[index];
         }
         return transform.position; // 유효하지 않은 인덱스면 오브젝트 위치 반환
     }

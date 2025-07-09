@@ -135,7 +135,7 @@ public class BubbleLauncher : MonoBehaviour
 
         for (int i = 0; i <= maxReflectionCount; i++)
         {
-            Vector2 targetPos = currentOrigin + currentDirection;
+            Vector2 targetPos = currentOrigin + currentDirection * 0.5f;
 
             var gridAxis = StageManager.Instance.GridManager.GetGridPosition(targetPos);
             var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
@@ -145,8 +145,12 @@ public class BubbleLauncher : MonoBehaviour
             if(bHitBubble == true)
             {
                 // 버블충돌
-                _linePoints.Add(gridPos);// hitBubble.point;
+                //_linePoints.Add(gridPos);// hitBubble.point;
                 currentReflectionCount++;
+                var lastPos = _linePoints.ElementAt(_linePoints.Count - 1);
+                gridAxis = StageManager.Instance.GridManager.GetGridPosition(lastPos);
+                gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
+                _linePoints[_linePoints.Count - 1] = gridPos;
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 

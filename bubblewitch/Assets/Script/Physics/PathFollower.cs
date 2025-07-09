@@ -8,16 +8,18 @@ public class PathFollower : MonoBehaviour
     private BubblePath _path; // 이동할 경로 정보를 가진 BubblePath 스크립트 참조
     private float _moveSpeed; // 이동 속도
     private int _currentPointIndex; // 현재 목표 지점 인덱스
+    private bool _isDrop;
 
     // 비동기 작업 취소를 위한 토큰 소스
     private CancellationTokenSource _cancellationTokenSource;
 
     // 초기화 함수
-    public void Initialize(BubblePath path, float speed, int startPointIndex = 0)
+    public void Initialize(BubblePath path, float speed, int startPointIndex = 0, bool isDrop = false)
     {
         _path = path;
         _moveSpeed = speed;
         _currentPointIndex = startPointIndex;
+        _isDrop = isDrop;
 
         // 기존 비동기 작업이 있다면 취소하고 새로운 소스 생성
         if (_cancellationTokenSource != null)
@@ -125,8 +127,15 @@ public class PathFollower : MonoBehaviour
     /// </summary>
     private void FinalizeBubblePosition()
     {
-        var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
-        StageManager.Instance.GridManager.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched: true);
+        if (_isDrop == true)
+        {
+            StageManager.Instance.BubbleManager.ReleaseDropBubble(this.gameObject);
+        }
+        else
+        {
+            var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
+            StageManager.Instance.GridManager.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched: true);
+        }
 
         Debug.Log("Bubble Finalized: " + gameObject.name);
     }

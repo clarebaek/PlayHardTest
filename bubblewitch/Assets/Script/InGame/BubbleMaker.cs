@@ -7,7 +7,7 @@ using System;
 
 public class BubbleMaker : MonoBehaviour
 {
-    const int MINIMUM_BUBBLE = 12;
+    const int MINIMUM_BUBBLE = 14;
     public int BubblePathCount { get => bubblePath.Count; }
 
     public List<BubbleMakerPath> bubblePath = new List<BubbleMakerPath>();
