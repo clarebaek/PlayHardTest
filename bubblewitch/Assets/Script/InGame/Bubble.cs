@@ -2,15 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.U2D;
 
 public class Bubble : MonoBehaviour
 {
     [SerializeField]
     GameObject _normalTypeGO;
     [SerializeField]
-    GameObject _fairyTypeGO;
+    SpriteRenderer _normalTypeImage;
     [SerializeField]
-    GameObject _bombTypeGO;
+    GameObject _fairyTypeGO;
+    public SpriteAtlas targetAtlas;
 
     private bool _isLaunched;
     public eBubbleType bubbleType { get; private set; }
@@ -31,28 +33,17 @@ public class Bubble : MonoBehaviour
 
     private void _SetView()
     {
-        _normalTypeGO.SetActive(bubbleType == eBubbleType.NORMAL);
         _fairyTypeGO.SetActive(bubbleType == eBubbleType.FAIRY);
-        _bombTypeGO.SetActive(bubbleType == eBubbleType.BOMB || bubbleType == eBubbleType.CAT_BOMB);
 
-        GameObject targetGO = bubbleType switch
+        if(_normalTypeImage.TryGetComponent<SpriteRenderer>(out var sprite))
         {
-            eBubbleType.NORMAL => _normalTypeGO,
-            eBubbleType.FAIRY => _fairyTypeGO,
-            eBubbleType.CAT_BOMB => _bombTypeGO,
-            eBubbleType.BOMB => _bombTypeGO,
-            _ => _normalTypeGO,
-        };
-
-        if(targetGO.TryGetComponent<SpriteRenderer>(out var sprite))
-        {
-            sprite.color = bubbleColor switch
+            sprite.sprite = bubbleColor switch
             {
-                eBubbleColor.RED => Color.red,
-                eBubbleColor.YELLOW => Color.yellow,
-                eBubbleColor.BLUE => Color.blue,
-                eBubbleColor.SPECIAL => Color.black,
-                _ => Color.white,
+                eBubbleColor.RED => targetAtlas.GetSprite("celery_0"),
+                eBubbleColor.YELLOW => targetAtlas.GetSprite("onion_0"),
+                eBubbleColor.BLUE => targetAtlas.GetSprite("riceball_0"),
+                eBubbleColor.SPECIAL => targetAtlas.GetSprite("bomb_0"),
+                _ => targetAtlas.GetSprite("onion_0"),
             };
         }
     }

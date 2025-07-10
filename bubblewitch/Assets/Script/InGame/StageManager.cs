@@ -147,6 +147,7 @@ public class StageManager : MonoSingleton<StageManager>
         {
             _catGauge += 25;
             ShootBubble();
+            _SetBtnInteractable(true);
             RemoveBubble();
             ReloadBubble();
         }

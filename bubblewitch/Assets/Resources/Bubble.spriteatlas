@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Bubble
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings: []
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 1
+      enableTightPacking: 1
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 102900000, guid: 98ce125ffec0e7146b7f83f045112779, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - f015f0c3a44f33a4ba5edf30b1225b08: -5768364531109799046
+    - d4fd0a8740ba8e747834856e4ebe66ff: -2613247888821195678
+    - a316a628a1f093b479c4759cab83260d: 247386834542786437
+    - f81decda1d97c2246b6b772161b89393: 4301307543399921889
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: -5768364531109799046, guid: f015f0c3a44f33a4ba5edf30b1225b08, type: 3}
+  - {fileID: -2613247888821195678, guid: d4fd0a8740ba8e747834856e4ebe66ff, type: 3}
+  - {fileID: 247386834542786437, guid: a316a628a1f093b479c4759cab83260d, type: 3}
+  - {fileID: 4301307543399921889, guid: f81decda1d97c2246b6b772161b89393, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - onion_0
+  - bomb_0
+  - celery_0
+  - riceball_0
+  m_RenderDataMap: {}
+  m_Tag: Bubble
+  m_IsVariant: 0
