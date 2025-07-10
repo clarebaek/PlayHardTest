@@ -141,7 +141,9 @@ public class BubbleLauncher : MonoBehaviour
             var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
             bool bHitBubble = StageManager.Instance.GridManager.GetBubbleAtGrid(gridAxis.x, gridAxis.y) != null;
             bool bNearBubble = StageManager.Instance.GridManager.GetNearBubbleByPosition(targetPos);
-            bool bHitWall = StageManager.Instance.GridManager.GetWallAtGrid(gridAxis.x, gridAxis.y);
+            //bool bHitWall = StageManager.Instance.GridManager.GetWallAtGrid(gridAxis.x, gridAxis.y);
+            bool bHitHorizontalWall = StageManager.Instance.GridManager.GetHorizontalWallAtPosition(targetPos);
+            bool bHitVerticalWall = StageManager.Instance.GridManager.GetVerticalWallAtPosition(targetPos);
 
             if(bHitBubble == true)
             {
@@ -162,14 +164,22 @@ public class BubbleLauncher : MonoBehaviour
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
-            if(bHitWall == false && bHitBubble == false)
+            if (bHitVerticalWall == true)
+            {
+                // 상하단벽에 부딪힐경우에는 소멸임
+                currentReflectionCount++;
+                _linePoints.Add(gridPos);
+                break; // 더 이상 반사되지 않으므로 루프 종료
+            }
+
+            if (bHitHorizontalWall == false && bHitVerticalWall  == false && bHitBubble == false)
             {
                 _linePoints.Add(targetPos);
                 currentReflectionCount++;
                 currentOrigin = targetPos;
             }
 
-            if (bHitWall == true)
+            if (bHitHorizontalWall == true)
             {
                 // 벽충돌
                 //_linePoints.Add(targetPos);

@@ -33,6 +33,11 @@ public class GridManager : MonoBehaviour
     public int gridCols = 8;
     public float bubbleRadius = 0.5f; // 실제 버블의 반지름
 
+    public float MIN_AXIS_X;
+    public float MAX_AXIS_X;
+    public float MIN_AXIS_Y;
+    public float MAX_AXIS_Y;
+
     // 그리드에 버블을 저장할 2차원 배열 (GameObject는 버블 인스턴스)
     // null은 빈 칸을 의미
     private GameObject[,] grid;
@@ -580,6 +585,18 @@ public class GridManager : MonoBehaviour
     public bool GetWallAtGrid(int col, int row)
     {
         if (col < 0 || col > gridCols || row < 0 || row > gridRows) return true;
+        return false;
+    }
+
+    public bool GetHorizontalWallAtPosition(Vector2 pos)
+    {
+        if (pos.x < MIN_AXIS_X || pos.x > MAX_AXIS_X) return true;
+        return false;
+    }
+
+    public bool GetVerticalWallAtPosition(Vector2 pos)
+    {
+        if (pos.y < MIN_AXIS_Y || pos.y > MAX_AXIS_Y) return true;
         return false;
     }
 
