@@ -140,17 +140,25 @@ public class BubbleLauncher : MonoBehaviour
             var gridAxis = StageManager.Instance.GridManager.GetGridPosition(targetPos);
             var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
             bool bHitBubble = StageManager.Instance.GridManager.GetBubbleAtGrid(gridAxis.x, gridAxis.y) != null;
+            bool bNearBubble = StageManager.Instance.GridManager.GetNearBubbleByPosition(targetPos);
             bool bHitWall = StageManager.Instance.GridManager.GetWallAtGrid(gridAxis.x, gridAxis.y);
 
             if(bHitBubble == true)
             {
                 // 버블충돌
-                //_linePoints.Add(gridPos);// hitBubble.point;
                 currentReflectionCount++;
                 var lastPos = _linePoints.ElementAt(_linePoints.Count - 1);
                 gridAxis = StageManager.Instance.GridManager.GetGridPosition(lastPos);
                 gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
                 _linePoints[_linePoints.Count - 1] = gridPos;
+                break; // 더 이상 반사되지 않으므로 루프 종료
+            }
+
+            if(bNearBubble== true)
+            {
+                // 어차피 주변에 버블로 막혀서 경로가 진행되면 안된다.
+                currentReflectionCount++;
+                _linePoints.Add(gridPos);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 

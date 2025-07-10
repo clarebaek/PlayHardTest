@@ -15,14 +15,14 @@ public class GridManager : MonoBehaviour
      /// </summary>
     private static readonly Vector2Int[] oddRowNeighbors = new Vector2Int[]
     {
-    new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(-1, 1),
-    new Vector2Int(-1, 0), new Vector2Int(-1, -1), new Vector2Int(0, -1)
+        new Vector2Int(0, 1), new Vector2Int(-1, 1), new Vector2Int(-1, 0),
+        new Vector2Int(-1, -1), new Vector2Int(0, -1), new Vector2Int(1, 0)
     };
 
     private static readonly Vector2Int[] evenRowNeighbors = new Vector2Int[]
     {
-    new Vector2Int(1, 0), new Vector2Int(1, 1), new Vector2Int(0, 1),
-    new Vector2Int(-1, 0), new Vector2Int(0, -1), new Vector2Int(1, -1)
+        new Vector2Int(1, 1), new Vector2Int(0, 1), new Vector2Int(-1, 0),
+        new Vector2Int(0, -1), new Vector2Int(1, -1), new Vector2Int(1, 0)
     };
 
     public int offsetX = 0;
@@ -484,6 +484,87 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    public bool GetNearBubbleByPosition(Vector2 pos)
+    {
+        // 그리드의 원점을 기준으로 6섹션으로 나눈다음
+        //#TODO :: GridPosition + WorldPosition 조합을 많이써서 공통화시키기
+        var gridAxis = GetGridPosition(pos);
+        var gridPos = GetWorldPosition(gridAxis.x, gridAxis.y);
+
+        // 현재의 pos가 어떤 섹션에 있는지 확인한다.
+        Vector2[] hexCorners = new Vector2[6];
+        for (int i = 0; i < 6; i++)
+        {
+            float angle_deg = 30 + 60 * i;
+            float angle_rad = Mathf.PI / 180 * angle_deg;
+            hexCorners[i] = gridPos + new Vector2(bubbleRadius * Mathf.Cos(angle_rad), bubbleRadius * Mathf.Sin(angle_rad));
+        }
+
+        int section = -1;
+        for (int i = 0; i < 6; i++)
+        {
+            if(IsPointInTriangleBarycentric(pos, gridPos, hexCorners[i], hexCorners[(i+1)%6]) == true)
+            {
+                section = i;
+            }
+            break;
+        }
+
+        // 각 섹션별로 인접한 그리드에 버블이 있는지 체크한다.
+        int startIndex = section - 1 < 0 ? 5 : section - 1;
+        int endIndex = (section + 1) % 6;
+        for(int index = 0; index < 3; index++)
+        {
+            // 짝수냐 홀수냐에 따라서 영역이 달라짐
+            //(row % 2 == 0) ? evenRowNeighbors : oddRowNeighbors
+            var checkGrid = gridAxis.y % 2 == 0 ? gridAxis + evenRowNeighbors[index] : gridAxis + oddRowNeighbors[index];
+            if (GetBubbleAtGrid(checkGrid.x, checkGrid.y) == true)
+            {
+                return true;
+            }
+            index = (index + 1) % 6;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 점이 2D 삼각형 내부에 있는지 확인합니다 (무게중심 좌표 방법).
+    /// </summary>
+    /// <param name="p">확인할 점의 위치</param>
+    /// <param name="a">삼각형의 첫 번째 꼭짓점</param>
+    /// <param name="b">삼각형의 두 번째 꼭짓점</param>
+    /// <param name="c">삼각형의 세 번째 꼭짓점</param>
+    /// <returns>점이 삼각형 내부에 있으면 true, 외부에 있으면 false</returns>
+    public static bool IsPointInTriangleBarycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+    {
+        // 꼭짓점 A를 기준으로 벡터를 만듭니다.
+        Vector2 v0 = c - a; // AC 벡터
+        Vector2 v1 = b - a; // AB 벡터
+        Vector2 v2 = p - a; // AP 벡터
+
+        // 각 벡터의 내적을 계산합니다.
+        // Dot(v, v) = v.magnitude^2
+        float dot00 = Vector2.Dot(v0, v0); // AC . AC
+        float dot01 = Vector2.Dot(v0, v1); // AC . AB
+        float dot02 = Vector2.Dot(v0, v2); // AC . AP
+        float dot11 = Vector2.Dot(v1, v1); // AB . AB
+        float dot12 = Vector2.Dot(v1, v2); // AB . AP
+
+        // 무게중심 좌표를 계산하기 위한 분모
+        float invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+
+        // 베타 (beta) 및 감마 (gamma) 무게중심 좌표 계산
+        // 알파 (alpha)는 1 - beta - gamma
+        float u = (dot11 * dot02 - dot01 * dot12) * invDenom; // u = gamma
+        float v = (dot00 * dot12 - dot01 * dot02) * invDenom; // v = beta
+
+        // 점이 삼각형 안에 있으려면 모든 무게중심 좌표가 0과 1 사이에 있어야 합니다.
+        // u >= 0 && v >= 0 은 u, v가 양수여야 함을 의미합니다.
+        // u + v < 1 은 나머지 좌표 (alpha)가 양수여야 함을 의미합니다.
+        // 경계선에 있는 점도 포함하려면 >= 와 <= 를 사용합니다.
+        return (u >= 0) && (v >= 0) && (u + v < 1);
     }
 
     /// <summary>
