@@ -140,8 +140,8 @@ public class StageManager : MonoSingleton<StageManager>
         if(_catGauge + 25 >=100)
         {
             _catGauge = 0;
+            ShootBubble();
             ChangeBubble();
-            _SetBtnInteractable(false);
         }
         else
         {
