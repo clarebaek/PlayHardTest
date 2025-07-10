@@ -724,6 +724,7 @@ public class GridManager : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR
     /// <summary>
     /// 유니티 에디터의 씬 뷰에 그리드 격자를 그립니다.
     /// </summary>
@@ -778,4 +779,5 @@ public class GridManager : MonoBehaviour
         //     Gizmos.DrawSphere(GetComponent<BubbleLauncher>().launchPoint.position, 0.2f);
         // }
     }
+#endif
 }

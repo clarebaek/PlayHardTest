@@ -25,6 +25,7 @@ public class BubblePath : MonoBehaviour
         return transform.position; // 유효하지 않은 인덱스면 오브젝트 위치 반환
     }
 
+#if UNITY_EDITOR
     // 씬 뷰에서 경로를 시각적으로 보여주기 위한 Gizmo
     void OnDrawGizmos()
     {
@@ -62,4 +63,5 @@ public class BubblePath : MonoBehaviour
             Gizmos.DrawWireSphere(currentPoint, pathWidth / 2); // 구체가 아닌 원을 원하면 Handles.DrawWireDisc 사용 (Editor 스크립트에서)
         }
     }
+#endif
 }

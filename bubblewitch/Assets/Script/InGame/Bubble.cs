@@ -57,6 +57,7 @@ public class Bubble : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         // 오브젝트가 선택되지 않아도 항상 Gizmo가 보이도록
@@ -66,4 +67,5 @@ public class Bubble : MonoBehaviour
         var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
         Handles.Label(transform.position, $"{gridPos}");
     }
+#endif
 }
