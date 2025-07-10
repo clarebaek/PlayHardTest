@@ -120,7 +120,7 @@ public class StageManager : MonoSingleton<StageManager>
 
     private void _ClickCat()
     {
-        if(_catGauge>=100)
+        if(_catGauge + 25 >=100)
         {
             _catGauge = 0;
             ChangeBubble();

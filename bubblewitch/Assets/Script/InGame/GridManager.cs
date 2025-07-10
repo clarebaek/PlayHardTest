@@ -278,20 +278,16 @@ public class GridManager : MonoBehaviour
                         neighborRow >= 0 && neighborRow < gridRows &&
                         !visited.Contains(neighborGridPos))
                     {
+                        visited.Add(neighborGridPos);
+                        newQueue.Enqueue(neighborGridPos);
+
                         GameObject neighborBubble = GetBubbleAtGrid(neighborCol, neighborRow);
                         if (neighborBubble != null)
                         {
                             var neighborController = neighborBubble.GetComponent<Bubble>();
-                            // 이웃 버블이 존재하고, BubbleController가 있으며, 색상이 같으면
                             if (neighborController != null)
                             {
-                                visited.Add(neighborGridPos);
                                 matchingBubbles.Add(neighborBubble);
-
-                                if(range != 0)
-                                {
-                                    newQueue.Enqueue(neighborGridPos);
-                                }
                             }
                         }
                     }

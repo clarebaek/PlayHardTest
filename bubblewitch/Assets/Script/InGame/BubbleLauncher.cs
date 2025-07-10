@@ -22,6 +22,10 @@ public class BubbleLauncher : MonoBehaviour
     // Line Renderer의 시작점과 끝점 개수
     private List<Vector2> _linePoints = new List<Vector2>();
 
+    [Header("타겟지점표기")]
+    [SerializeField]
+    private GameObject _targetGo;
+
     void Start()
     {
         // Line Renderer 초기 설정
@@ -96,6 +100,7 @@ public class BubbleLauncher : MonoBehaviour
     /// </summary>
     void DisableAimLine()
     {
+        _SetTargetGo(false, 0, 0);
         if (lineRenderer != null && lineRenderer.enabled)
         {
             lineRenderer.enabled = false;
@@ -153,6 +158,7 @@ public class BubbleLauncher : MonoBehaviour
                 gridAxis = StageManager.Instance.GridManager.GetGridPosition(lastPos);
                 gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
                 _linePoints[_linePoints.Count - 1] = gridPos;
+                _SetTargetGo(true, gridPos.x, gridPos.y);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
@@ -161,6 +167,7 @@ public class BubbleLauncher : MonoBehaviour
                 // 어차피 주변에 버블로 막혀서 경로가 진행되면 안된다.
                 currentReflectionCount++;
                 _linePoints.Add(gridPos);
+                _SetTargetGo(true, gridPos.x, gridPos.y);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
@@ -169,6 +176,7 @@ public class BubbleLauncher : MonoBehaviour
                 // 상하단벽에 부딪힐경우에는 소멸임
                 currentReflectionCount++;
                 _linePoints.Add(gridPos);
+                _SetTargetGo(false, 0,0);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
@@ -187,6 +195,7 @@ public class BubbleLauncher : MonoBehaviour
 
                 // 벽에 부딪혔을 때 반사 방향 계산
                 currentDirection = Vector2.Reflect(currentDirection, currentDirection.x >= 0 ? Vector2.left : Vector2.right);
+                _SetTargetGo(false, 0, 0);
             }
         }
 
@@ -204,6 +213,12 @@ public class BubbleLauncher : MonoBehaviour
                 return;
             }
         }
+    }
+
+    void _SetTargetGo(bool set, float x, float y)
+    {
+        _targetGo.SetActive(set);
+        _targetGo.transform.position = new Vector2(x,y);
     }
 
     public void SpawnNewBubble()
