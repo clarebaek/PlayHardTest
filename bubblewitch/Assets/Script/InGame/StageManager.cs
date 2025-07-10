@@ -59,6 +59,23 @@ public class StageManager : MonoSingleton<StageManager>
         _bossHPText.text = $"{_bossHP}";
     }
 
+    public void ProgressGridProcess()
+    {
+        _SetBtnInteractable(false);
+    }
+
+    public void CompleteGridProcess()
+    {
+        ReloadBubble();
+        _SetBtnInteractable(true);
+    }
+
+    private void _SetBtnInteractable(bool set)
+    {
+        _catBtn.interactable = set;
+        _changeBtn.interactable = set;
+    }
+
     public void DamageBoss(int cal)
     {
         _bossHP += cal;
@@ -87,7 +104,7 @@ public class StageManager : MonoSingleton<StageManager>
 
     public void ShootBubble()
     {
-        _catBtn.interactable = true;
+        _SetBtnInteractable(false);
         _shootChance--;
         _SetView_BubbleChance();
     }
@@ -124,7 +141,7 @@ public class StageManager : MonoSingleton<StageManager>
         {
             _catGauge = 0;
             ChangeBubble();
-            _catBtn.interactable = false;
+            _SetBtnInteractable(false);
         }
         else
         {

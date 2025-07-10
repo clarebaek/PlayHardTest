@@ -161,7 +161,7 @@ public class GridManager : MonoBehaviour
             }
             else
             {
-                StageManager.Instance.ReloadBubble();
+                StageManager.Instance.CompleteGridProcess();
             }
         }
     }
@@ -644,8 +644,9 @@ public class GridManager : MonoBehaviour
 
     async void _StartBubbleGeneration()
     {
+        StageManager.Instance.ProgressGridProcess();
         await _InitBubble();
-        StageManager.Instance.ReloadBubble();
+        StageManager.Instance.CompleteGridProcess();
     }
 
     private async Task _InitBubble() // async UniTask로 변경하여 await 가능하게 함
@@ -689,8 +690,9 @@ public class GridManager : MonoBehaviour
 
     async void _BubbleGeneration()
     {
+        StageManager.Instance.ProgressGridProcess();
         await _RefillBubble();
-        StageManager.Instance.ReloadBubble();
+        StageManager.Instance.CompleteGridProcess();
     }
 
     private async Task _RefillBubble() // async UniTask로 변경하여 await 가능하게 함
