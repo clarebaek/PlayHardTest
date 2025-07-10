@@ -515,16 +515,17 @@ public class GridManager : MonoBehaviour
         // 각 섹션별로 인접한 그리드에 버블이 있는지 체크한다.
         int startIndex = section - 1 < 0 ? 5 : section - 1;
         int endIndex = (section + 1) % 6;
+        int neighborIndex = startIndex;
         for(int index = 0; index < 3; index++)
         {
             // 짝수냐 홀수냐에 따라서 영역이 달라짐
             //(row % 2 == 0) ? evenRowNeighbors : oddRowNeighbors
-            var checkGrid = gridAxis.y % 2 == 0 ? gridAxis + evenRowNeighbors[index] : gridAxis + oddRowNeighbors[index];
+            var checkGrid = gridAxis.y % 2 == 0 ? gridAxis + evenRowNeighbors[neighborIndex] : gridAxis + oddRowNeighbors[neighborIndex];
             if (GetBubbleAtGrid(checkGrid.x, checkGrid.y) == true)
             {
                 return true;
             }
-            index = (index + 1) % 6;
+            neighborIndex = (neighborIndex + 1) % 6;
         }
         return false;
     }
