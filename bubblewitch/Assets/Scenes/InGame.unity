@@ -1219,9 +1219,9 @@ MonoBehaviour:
   offsetX: 0
   offsetY: 5
   gridRows: 12
-  gridCols: 10
+  gridCols: 11
   bubbleRadius: 0.5
-  MIN_AXIS_X: -1.5
+  MIN_AXIS_X: -1
   MAX_AXIS_X: 9
   MIN_AXIS_Y: -5
   MAX_AXIS_Y: 9
@@ -2315,6 +2315,77 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1307880842
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1438513679}
+    m_Modifications:
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -6.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5734051173412600343, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_Name
+      value: Bubble
+      objectReference: {fileID: 0}
+    - target: {fileID: 5734051173412600343, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+--- !u!1 &1307880843 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5734051173412600343, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+  m_PrefabInstance: {fileID: 1307880842}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1307880844 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3896096348010627302, guid: 55bbfb2e24a3d114b8828b8613c3c9fc, type: 3}
+  m_PrefabInstance: {fileID: 1307880842}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1326781802
 GameObject:
   m_ObjectHideFlags: 0
@@ -2638,8 +2709,8 @@ LineRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 1
+        time: 0.007419586
+        value: 0.19090843
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -2710,6 +2781,7 @@ MonoBehaviour:
   collisionLayer:
     serializedVersion: 2
     m_Bits: 128
+  _targetGo: {fileID: 1307880843}
 --- !u!4 &1438513679
 Transform:
   m_ObjectHideFlags: 0
@@ -2725,6 +2797,7 @@ Transform:
   m_Children:
   - {fileID: 325264977}
   - {fileID: 1576195744}
+  - {fileID: 1307880844}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1441567694
@@ -2931,7 +3004,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
