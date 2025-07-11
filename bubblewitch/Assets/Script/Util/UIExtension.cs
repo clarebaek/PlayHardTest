@@ -11,7 +11,9 @@ namespace UnityEngine.UI.Extensions
         {
             if (btn == null)
             {
+#if UNITY_EDITOR
                 Debug.LogError("btn is null");
+#endif
                 return;
             }
             btn.onClick.RemoveAllListeners();

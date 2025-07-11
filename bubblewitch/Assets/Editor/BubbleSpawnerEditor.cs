@@ -50,25 +50,23 @@ public class BubbleSpawnerEditor : Editor // Editor 클래스를 상속합니다.
         Vector2 currentPos = spawnerTransform.position;
 
         float halfBubbleRadius = StageManager.Instance.GridManager.bubbleRadius;
-        float gridWidth = StageManager.Instance.GridManager.gridCols * halfBubbleRadius * 2;
-        float gridHeight = StageManager.Instance.GridManager.gridRows * halfBubbleRadius * Mathf.Sqrt(3);
+        float gridWidth = StageManager.Instance.GridManager.gridCols * halfBubbleRadius * Mathf.Sqrt(3);
+        float gridHeight = StageManager.Instance.GridManager.gridRows * halfBubbleRadius * 1.5f;
 
-        // 그리드 시작 위치 (GridManager의 GetWorldPosition(0,0)을 참고하여 정확한 원점 설정)
-        // 여기서는 임시로 (0,0)을 그리드 시작점으로 가정.
-        float minX = 0f;
-        float maxX = gridWidth - halfBubbleRadius * 2;
-        float minY = 0f;
-        float maxY = gridHeight;
+        // 그리드 시작 위치
+        float minX = StageManager.Instance.GridManager.offset_x;
+        float maxX = StageManager.Instance.GridManager.offset_x + gridWidth - halfBubbleRadius * 2;
+        float maxY = StageManager.Instance.GridManager.offset_y;
+        float minY = StageManager.Instance.GridManager.offset_y - gridHeight;
 
         var gridPos = StageManager.Instance.GridManager.GetGridPosition(currentPos);
         var changedPos = StageManager.Instance.GridManager.GetWorldPosition(gridPos.x, gridPos.y);
 
         // X축 제한
-        // 스포너의 중앙이 그리드 내에 있도록 (또는 버블이 그리드 내에서 발사되도록)
         changedPos.x = Mathf.Clamp(changedPos.x, minX - halfBubbleRadius, maxX + halfBubbleRadius);
 
-        // Y축 제한 (스포너는 보통 그리드 아래에 위치하므로, 이 범위는 조절 필요)
-        changedPos.y = Mathf.Clamp(changedPos.y, minY - halfBubbleRadius, maxY);
+        // Y축 제한
+        changedPos.y = Mathf.Clamp(changedPos.y, minY + halfBubbleRadius, maxY);
 
         if (currentPos != changedPos)
         {

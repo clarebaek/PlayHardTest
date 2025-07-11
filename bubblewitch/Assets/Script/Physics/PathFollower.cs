@@ -30,7 +30,7 @@ public class PathFollower : MonoBehaviour
         _cancellationTokenSource = new CancellationTokenSource();
 
         // 경로 이동 시작
-        FollowPath(_cancellationTokenSource.Token); // Forget()으로 비동기 호출 (반환값 무시)
+        _FollowPath(_cancellationTokenSource.Token); // Forget()으로 비동기 호출 (반환값 무시)
     }
 
     void OnDisable()
@@ -47,11 +47,13 @@ public class PathFollower : MonoBehaviour
     /// <summary>
     /// 경로를 따라 이동하는 비동기 함수.
     /// </summary>
-    private async Task FollowPath(CancellationToken token)
+    private async Task _FollowPath(CancellationToken token)
     {
         if (_path == null || _path.pathPoints == null || _path.pathPoints.Count < 2)
         {
+#if UNITY_EDITOR
             Debug.LogWarning("PathFollower: 경로가 유효하지 않습니다. 이동을 시작할 수 없습니다.");
+#endif
             return;
         }
 
@@ -67,8 +69,10 @@ public class PathFollower : MonoBehaviour
                 // 닫힌 경로가 아니면 종료
                 if (!_path.isClosedPath)
                 {
+#if UNITY_EDITOR
                     Debug.Log("PathFollower: 경로의 끝에 도달했습니다.");
-                    FinalizeBubblePosition(); // 최종 위치 처리
+#endif
+                    _FinalizeBubblePosition(); // 최종 위치 처리
                     break; // 루프 종료
                 }
                 // 닫힌 경로이면 처음으로 돌아감
@@ -95,8 +99,10 @@ public class PathFollower : MonoBehaviour
                 // 취소 요청이 있었는지 확인
                 if (token.IsCancellationRequested)
                 {
+#if UNITY_EDITOR
                     Debug.Log("PathFollower: 이동 중 취소 요청 감지.");
-                    FinalizeBubblePosition(); // 최종 위치 처리 (중단 시)
+#endif
+                    _FinalizeBubblePosition(); // 최종 위치 처리 (중단 시)
                     return; // 함수 종료
                 }
 
@@ -114,8 +120,10 @@ public class PathFollower : MonoBehaviour
             // 닫힌 경로가 아니면서 마지막 지점에 도달했는지 확인
             if (!_path.isClosedPath && _currentPointIndex > lastPointIndex)
             {
+#if UNITY_EDITOR
                 Debug.Log("PathFollower: 경로의 끝에 도달했습니다.");
-                FinalizeBubblePosition(); // 최종 위치 처리
+#endif
+                _FinalizeBubblePosition(); // 최종 위치 처리
                 break; // 루프 종료
             }
         }
@@ -125,7 +133,7 @@ public class PathFollower : MonoBehaviour
     /// 경로 이동이 완료되거나 중단되었을 때 버블의 최종 상태를 처리합니다.
     /// (예: 그리드에 부착, 풀에 반환, 컴포넌트 제거 등)
     /// </summary>
-    private void FinalizeBubblePosition()
+    private void _FinalizeBubblePosition()
     {
         if (_isDrop == true)
         {
@@ -137,6 +145,8 @@ public class PathFollower : MonoBehaviour
             StageManager.Instance.GridManager.PlaceBubble(this.gameObject, gridPos.x, gridPos.y, isLaunched: true);
         }
 
+#if UNITY_EDITOR
         Debug.Log("Bubble Finalized: " + gameObject.name);
+#endif
     }
 }

@@ -70,7 +70,9 @@ public class ExcelParser
 
             if (list.ContainsKey(values[0]) == true)
             {
+#if UNITY_EDITOR
                 Debug.Log("ERROR!!!!!");
+#endif
                 continue;
             }
             else

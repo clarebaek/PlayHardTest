@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// [ExecuteInEditMode] // 씬에서 바로 확인하고 싶을 때 사용 (주의: 성능 저하)
+
 public class BubblePath : MonoBehaviour
 {
     // 경로의 각 지점 (로컬 좌표)
@@ -55,12 +55,12 @@ public class BubblePath : MonoBehaviour
             Gizmos.DrawSphere(currentPoint, 0.1f); // 각 지점에 작은 구체 표시
         }
 
-        // 경로 너비를 시각적으로 표시 (선택 사항)
+        // 경로 너비를 시각적으로 표시
         Gizmos.color = new Color(1, 0.5f, 0, 0.2f); // 주황색 반투명
         for (int i = 0; i < pathPoints.Count; i++)
         {
             Vector3 currentPoint = GetWorldPoint(i);
-            Gizmos.DrawWireSphere(currentPoint, pathWidth / 2); // 구체가 아닌 원을 원하면 Handles.DrawWireDisc 사용 (Editor 스크립트에서)
+            Gizmos.DrawWireSphere(currentPoint, pathWidth / 2);
         }
     }
 #endif
