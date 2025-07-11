@@ -121,52 +121,21 @@ public class GridManager : MonoBehaviour
                 switch(bubbleScript.bubbleType)
                 {
                     case eBubbleType.CAT_BOMB:
-                        _CatBombTypeProcess();
+                        _CatBombTypeProcess(col, row);
                         break;
                     case eBubbleType.BOMB:
-                        _BombTypeProcess();
+                        _BombTypeProcess(col, row);
                         break;
                     case eBubbleType.FAIRY:
                     case eBubbleType.NORMAL:
                     default:
-                        _NormalTypeProcess();
+                        _NormalTypeProcess(col, row);
                         break;
                 };
             }
         }
 
         return;
-
-        void _NormalTypeProcess()
-        {
-            var popList = _FindMatchingBubbles(new Vector2Int(col, row));
-            _ProcessPopList(popList , false);
-        }
-
-        void _CatBombTypeProcess()
-        {
-            var popList = FindBombRange(new Vector2Int(col, row), 2);
-            _ProcessPopList(popList, true);
-        }
-
-        void _BombTypeProcess()
-        {
-            var popList = FindBombRange(new Vector2Int(col, row), 1);
-            _ProcessPopList(popList, true);
-        }
-
-        void _ProcessPopList(List<GameObject> popList, bool unconditionally)
-        {
-            popList = popList.Distinct().ToList();
-            if (popList.Count >= 3 || unconditionally == true)
-            {
-                PopBubbles(popList);
-            }
-            else
-            {
-                StageManager.Instance.CompleteGridProcess();
-            }
-        }
     }
     /// <summary>
     /// 특정 그리드 위치에서 시작하여 같은 색상의 연결된 버블들을 모두 찾습니다. (BFS/DFS)
@@ -231,6 +200,15 @@ public class GridManager : MonoBehaviour
                             queue.Enqueue(neighborGridPos);
                             matchingBubbles.Add(neighborBubble);
                         }
+
+                        // 첫 진입시 주변이 폭탄일때는 주변 1칸 제거해야된다.
+                        if(neighborController != null 
+                            && startGridPos == currentGridPos
+                            && neighborController.bubbleType == eBubbleType.BOMB)
+                        {
+                            _BombTypeProcess(neighborGridPos.x, neighborGridPos.y);
+                            return null;
+                        }
                     }
                 }
             }
@@ -245,7 +223,7 @@ public class GridManager : MonoBehaviour
     /// <param name="startGridPos"></param>
     /// <param name="range"></param>
     /// <returns></returns>
-    public List<GameObject> FindBombRange(Vector2Int startGridPos, int range)
+    private List<GameObject> _FindBombRange(Vector2Int startGridPos, int range)
     {
         GameObject startBubble = GetBubbleAtGrid(startGridPos.x, startGridPos.y);
         if (startBubble == null)
@@ -302,7 +280,8 @@ public class GridManager : MonoBehaviour
                         if (neighborBubble != null)
                         {
                             var neighborController = neighborBubble.GetComponent<Bubble>();
-                            if (neighborController != null)
+
+                            if (neighborController != null && neighborController.bubbleType != eBubbleType.BOMB)
                             {
                                 matchingBubbles.Add(neighborBubble);
                             }
@@ -314,6 +293,42 @@ public class GridManager : MonoBehaviour
         }
 
         return matchingBubbles;
+    }
+
+
+
+    void _NormalTypeProcess(int col, int row)
+    {
+        var popList = _FindMatchingBubbles(new Vector2Int(col, row));
+        _ProcessPopList(popList, false);
+    }
+
+    void _CatBombTypeProcess(int col, int row)
+    {
+        var popList = _FindBombRange(new Vector2Int(col, row), 2);
+        _ProcessPopList(popList, true);
+    }
+
+    void _BombTypeProcess(int col, int row)
+    {
+        var popList = _FindBombRange(new Vector2Int(col, row), 1);
+        _ProcessPopList(popList, true);
+    }
+
+    void _ProcessPopList(List<GameObject> popList, bool unconditionally)
+    {
+        if (popList == null)
+            return;
+
+        popList = popList.Distinct().ToList();
+        if (popList.Count >= 3 || unconditionally == true)
+        {
+            PopBubbles(popList);
+        }
+        else
+        {
+            StageManager.Instance.CompleteGridProcess();
+        }
     }
 
     /// <summary>

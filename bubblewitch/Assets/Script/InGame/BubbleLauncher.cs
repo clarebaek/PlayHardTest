@@ -258,7 +258,7 @@ public class BubbleLauncher : MonoBehaviour
             {
                 if (_currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
                 {
-                    bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.BOMB),
+                    bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.FAIRY),
                             StageManager.Instance.BubbleManager.RandomBubbleColor(eBubbleColor.RED, eBubbleColor.BLUE));
                 }
             }
@@ -280,7 +280,7 @@ public class BubbleLauncher : MonoBehaviour
             // 버블의 타입을 설정한다.
             if (_nextBubble.TryGetComponent<Bubble>(out var bubbleScript))
             {
-                bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.BOMB),
+                bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.FAIRY),
                         StageManager.Instance.BubbleManager.RandomBubbleColor(eBubbleColor.RED, eBubbleColor.BLUE));
             }
         }

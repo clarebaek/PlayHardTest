@@ -104,6 +104,13 @@ public class BubbleManager : MonoBehaviour
     /// </summary>
     public void ReleaseBubble(GameObject bubble)
     {
+        if(bubble.TryGetComponent<Bubble>(out var script))
+        {
+            if(script.bubbleType == eBubbleType.BOMB)
+            {
+                StageManager.Instance.AddNowBombCount(-1);
+            }
+        }
         _bubblePool.Release(bubble);
     }
 
@@ -132,7 +139,25 @@ public class BubbleManager : MonoBehaviour
     /// <returns></returns>
     public eBubbleType RandomBubbleType(eBubbleType start, eBubbleType end)
     {
-        return (eBubbleType)Random.Range((int)start, (int)end + 1);
+        eBubbleType type = (eBubbleType)Random.Range((int)start, (int)end + 1);
+        if (type == eBubbleType.BOMB)
+        {
+            // 맵내 존재하는 폭탄 개체수 조절을 위함
+            if(StageManager.Instance.CanSpawnBomb == false)
+            {
+                type--;
+                StageManager.Instance.AddNowNormalCount(1);
+            }
+            else
+            {
+                StageManager.Instance.AddNowBombCount(1);
+            }
+        }
+        else
+        {
+            StageManager.Instance.AddNowNormalCount(1);
+        }
+        return type;
     }
 
     /// <summary>

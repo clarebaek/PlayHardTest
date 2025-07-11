@@ -35,6 +35,12 @@ public class StageManager : MonoSingleton<StageManager>
 
     private int _catGauge = 0;
 
+    public bool CanSpawnBomb { get => _nowBomb < _enableBomb && _nowNormal >= _goalBomb; }
+    private int _enableBomb = 3;
+    private int _nowBomb = 0;
+    private int _goalBomb = 7;
+    private int _nowNormal = 0;
+
     private void Awake()
     {
         _SetBtnListner();
@@ -158,5 +164,20 @@ public class StageManager : MonoSingleton<StageManager>
     private void _SetView_Cat()
     {
         _catImg.fillAmount = _catGauge * 0.01f;
+    }
+
+    public void AddNowBombCount(int add)
+    {
+        _nowBomb += add;
+
+        if(add > 0)
+        {
+            _nowNormal = 0;
+        }
+    }
+
+    public void AddNowNormalCount(int add)
+    {
+        _nowNormal += add;
     }
 }
