@@ -99,7 +99,7 @@ public class StageManager : MonoSingleton<StageManager>
 
     private void _ClickChange()
     {
-        BubbleLauncher.ChangeNextBubble();
+        BubbleLauncher.SwitchCurrentAndNext();
     }
 
     public void ShootBubble()
@@ -121,7 +121,7 @@ public class StageManager : MonoSingleton<StageManager>
 
     public void ChangeBubble()
     {
-        BubbleLauncher.ChangeCurrentBubble();
+        BubbleLauncher.ChangeCurrentBubbleToBomb();
     }
 
     public void ReloadBubble()

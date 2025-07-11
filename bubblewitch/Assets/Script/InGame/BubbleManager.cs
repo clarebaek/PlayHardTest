@@ -25,8 +25,7 @@ public enum eBubbleColor
 
 public class BubbleManager : MonoBehaviour
 {
-    private List<Bubble> _bubble = new List<Bubble>();
-    private ObjectPool<GameObject> _bubblePool; // 유니티 공식 ObjectPool
+    private ObjectPool<GameObject> _bubblePool;
     private ObjectPool<GameObject> _dropBubblePool;
 
     private void Awake()
@@ -37,8 +36,8 @@ public class BubbleManager : MonoBehaviour
     private void _InitObjectPool()
     {
         _bubblePool = new ObjectPool<GameObject>(
-            CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
-            OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
+            _CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
+            _OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
             OnReleaseToPool,      // 버블을 풀로 반환할 때 호출되는 메서드
             OnDestroyPooledBubble, // 풀의 maxSize를 초과하거나 풀이 파괴될 때 호출되는 메서드 (선택 사항)
             collectionCheck: false, // 컬렉션 중복 체크 (성능을 위해 false 권장)
@@ -47,8 +46,8 @@ public class BubbleManager : MonoBehaviour
         );
 
         _dropBubblePool = new ObjectPool<GameObject>(
-            CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
-            OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
+            _CreatePooledBubble,   // 풀이 비어있을 때 새 버블을 생성하는 메서드
+            _OnGetFromPool,        // 풀에서 버블을 가져올 때 호출되는 메서드
             OnReleaseToPool,      // 버블을 풀로 반환할 때 호출되는 메서드
             OnDestroyPooledBubble, // 풀의 maxSize를 초과하거나 풀이 파괴될 때 호출되는 메서드 (선택 사항)
             collectionCheck: false, // 컬렉션 중복 체크 (성능을 위해 false 권장)
@@ -56,15 +55,14 @@ public class BubbleManager : MonoBehaviour
             maxSize: 300      // 최대 풀 크기
         );
     }
+
     /// <summary>
     /// 풀이 비어있을 때 새로운 버블 오브젝트를 생성합니다. (ObjectPool 생성자의 createFunc)
     /// </summary>
-    private GameObject CreatePooledBubble()
+    private GameObject _CreatePooledBubble()
     {
         var resource = Resources.Load<GameObject>("Prefab/Ingame/Bubble");
         GameObject bubble = Instantiate(resource);
-        // 생성된 버블의 Rigidbody2D는 풀로 돌아가거나 활성화될 때마다 초기화되므로 여기서 특별히 설정할 필요는 없습니다.
-        // Hierarchy 정리를 위해 부모 설정
         bubble.transform.SetParent(this.transform);
         return bubble;
     }
@@ -72,10 +70,9 @@ public class BubbleManager : MonoBehaviour
     /// <summary>
     /// 풀에서 버블을 가져올 때 호출됩니다. (ObjectPool 생성자의 actionOnGet)
     /// </summary>
-    private void OnGetFromPool(GameObject bubble)
+    private void _OnGetFromPool(GameObject bubble)
     {
         bubble.SetActive(true); // 버블 활성화
-        bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
 
     /// <summary>
@@ -84,8 +81,6 @@ public class BubbleManager : MonoBehaviour
     private void OnReleaseToPool(GameObject bubble)
     {
         bubble.SetActive(false); // 버블 비활성화
-        // 버블의 상태를 초기화하여 다음 사용을 준비합니다.
-        bubble.transform.SetParent(this.transform); // Hierarchy 정리를 위해 다시 부모 설정
     }
 
     /// <summary>
@@ -113,7 +108,7 @@ public class BubbleManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 풀에서 버블을 가져오는 공개 메서드
+    /// 풀에서 떨어지는용 버블을 가져오는 공개 메서드
     /// </summary>
     public GameObject GetDropBubble()
     {
@@ -121,10 +116,33 @@ public class BubbleManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 버블을 풀로 반환하는 공개 메서드
+    /// 떨어지는용 버블을 풀로 반환하는 공개 메서드
     /// </summary>
     public void ReleaseDropBubble(GameObject bubble)
     {
         _dropBubblePool.Release(bubble);
+    }
+
+
+    /// <summary>
+    /// 버블 타입 랜덤 지정
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public eBubbleType RandomBubbleType(eBubbleType start, eBubbleType end)
+    {
+        return (eBubbleType)Random.Range((int)start, (int)end + 1);
+    }
+
+    /// <summary>
+    /// 버블 색상 랜덤 지정
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public eBubbleColor RandomBubbleColor(eBubbleColor start, eBubbleColor end)
+    {
+        return (eBubbleColor)Random.Range((int)start, (int)end + 1);
     }
 }

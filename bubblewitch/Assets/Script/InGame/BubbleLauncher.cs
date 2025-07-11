@@ -6,47 +6,53 @@ using Utility.Singleton;
 
 public class BubbleLauncher : MonoBehaviour
 {
-    public Transform launchPoint;
-    public Transform nextLaunchPoint;
-    public float launchForce = 15f;
+    [Header("발사 예정 버블 표기")]
+    [SerializeField]
+    private Transform _launchPoint;
+    [SerializeField]
+    private Transform _nextLaunchPoint;
+    [SerializeField]
+    private float _launchForce = 15f;
 
-    // --- 조준선 관련 추가 변수 ---
-    public LineRenderer lineRenderer; // 인스펙터에서 연결할 Line Renderer 컴포넌트
-    public int maxReflectionCount;
-    public LayerMask collisionLayer; // 레이캐스트가 감지할 벽/버블 레이어 (예: Wall, Bubble)
+    [Header("조준선 관련 표기")]
+    [SerializeField]
+    private LineRenderer _lineRenderer;
+    [SerializeField]
+    private int _maxReflectionCount;
 
-    private GameObject currentBubble;
-    private GameObject nextBubble;
-    private bool canLaunch = true;
+    private GameObject _currentBubble;
+    private GameObject _nextBubble;
+    private bool _canLaunch;
 
-    // Line Renderer의 시작점과 끝점 개수
+    // Line Renderer의 시작점과 끝점
     private List<Vector2> _linePoints = new List<Vector2>();
 
-    [Header("타겟지점표기")]
+    [Header("타겟 지점 표기")]
     [SerializeField]
     private GameObject _targetGo;
 
     void Start()
     {
-        // Line Renderer 초기 설정
-        if (lineRenderer == null)
+        if (_lineRenderer == null)
         {
+#if UNITY_EDITOR
             Debug.LogError("Line Renderer가 BubbleLauncher에 연결되지 않았습니다.");
+#endif
             return;
         }
-        lineRenderer.positionCount = 0; // 초기에는 선을 그리지 않음
-        lineRenderer.enabled = false; // 시작 시 비활성화
+        _lineRenderer.positionCount = 0; // 초기에는 선을 그리지 않음
+        _lineRenderer.enabled = false; // 시작 시 비활성화
     }
 
     void Update()
     {
-        if (!canLaunch || currentBubble == null)
+        if (!_canLaunch || _currentBubble == null)
         {
             // 조준선 비활성화
-            if (lineRenderer.enabled)
+            if (_lineRenderer.enabled)
             {
-                lineRenderer.enabled = false;
-                lineRenderer.positionCount = 0;
+                _lineRenderer.enabled = false;
+                _lineRenderer.positionCount = 0;
             }
             return;
         }
@@ -100,11 +106,11 @@ public class BubbleLauncher : MonoBehaviour
     /// </summary>
     void DisableAimLine()
     {
-        _SetTargetGo(false, 0, 0);
-        if (lineRenderer != null && lineRenderer.enabled)
+        _SetTargetGoActive(false, 0, 0);
+        if (_lineRenderer != null && _lineRenderer.enabled)
         {
-            lineRenderer.enabled = false;
-            lineRenderer.positionCount = 0;
+            _lineRenderer.enabled = false;
+            _lineRenderer.positionCount = 0;
         }
     }
 
@@ -114,12 +120,12 @@ public class BubbleLauncher : MonoBehaviour
     /// <param name="touchPosition">화면 터치 픽셀 좌표</param>
     void DrawAimLine(Vector2 touchPosition)
     {
-        if (lineRenderer == null) return;
+        if (_lineRenderer == null) return;
 
-        lineRenderer.enabled = true; // 조준선 활성화
+        _lineRenderer.enabled = true; // 조준선 활성화
         _linePoints.Clear();// 시작점 + 반사점들 + 마지막 예측점
 
-        Vector3 startPosition = launchPoint.position;
+        Vector3 startPosition = _launchPoint.position;
         Vector3 worldTouchPosition = Camera.main.ScreenToWorldPoint(new Vector3(touchPosition.x, touchPosition.y, Camera.main.nearClipPlane));
         worldTouchPosition.z = 0; // 2D 게임이므로 Z축 고정
 
@@ -128,8 +134,8 @@ public class BubbleLauncher : MonoBehaviour
         // 버블이 발사 지점보다 위로 조준될 때만 선을 그림
         if (direction.y < 0.1f) // 0.1f는 임계값, 필요에 따라 조절
         {
-            lineRenderer.enabled = false; // 너무 아래로 조준하면 선을 그리지 않음
-            lineRenderer.positionCount = 0;
+            _lineRenderer.enabled = false; // 너무 아래로 조준하면 선을 그리지 않음
+            _lineRenderer.positionCount = 0;
             return;
         }
 
@@ -138,16 +144,21 @@ public class BubbleLauncher : MonoBehaviour
         Vector2 currentOrigin = startPosition;
         Vector2 currentDirection = direction;
 
-        for (int i = 0; i <= maxReflectionCount; i++)
+        for (int i = 0; i <= _maxReflectionCount; i++)
         {
+            // 0.5만큼 전진
             Vector2 targetPos = currentOrigin + currentDirection * 0.5f;
 
             var gridAxis = StageManager.Instance.GridManager.GetGridPosition(targetPos);
             var gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
+
+            // 버블 충돌여부 체크
             bool bHitBubble = StageManager.Instance.GridManager.GetBubbleAtGrid(gridAxis.x, gridAxis.y) != null;
+            // 근처에 버블이 있는지 체크
             bool bNearBubble = StageManager.Instance.GridManager.GetNearBubbleByPosition(targetPos);
-            //bool bHitWall = StageManager.Instance.GridManager.GetWallAtGrid(gridAxis.x, gridAxis.y);
+            // 좌우 벽 체크
             bool bHitHorizontalWall = StageManager.Instance.GridManager.GetHorizontalWallAtPosition(targetPos);
+            // 상하 벽 체크
             bool bHitVerticalWall = StageManager.Instance.GridManager.GetVerticalWallAtPosition(targetPos);
 
             if(bHitBubble == true)
@@ -158,7 +169,7 @@ public class BubbleLauncher : MonoBehaviour
                 gridAxis = StageManager.Instance.GridManager.GetGridPosition(lastPos);
                 gridPos = StageManager.Instance.GridManager.GetWorldPosition(gridAxis.x, gridAxis.y);
                 _linePoints[_linePoints.Count - 1] = gridPos;
-                _SetTargetGo(true, gridPos.x, gridPos.y);
+                _SetTargetGoActive(true, gridPos.x, gridPos.y);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
@@ -167,7 +178,7 @@ public class BubbleLauncher : MonoBehaviour
                 // 어차피 주변에 버블로 막혀서 경로가 진행되면 안된다.
                 currentReflectionCount++;
                 _linePoints.Add(gridPos);
-                _SetTargetGo(true, gridPos.x, gridPos.y);
+                _SetTargetGoActive(true, gridPos.x, gridPos.y);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
@@ -176,37 +187,35 @@ public class BubbleLauncher : MonoBehaviour
                 // 상하단벽에 부딪힐경우에는 소멸임
                 currentReflectionCount++;
                 _linePoints.Add(gridPos);
-                _SetTargetGo(false, 0,0);
+                _SetTargetGoActive(false, 0,0);
                 break; // 더 이상 반사되지 않으므로 루프 종료
             }
 
             if (bHitHorizontalWall == false && bHitVerticalWall  == false && bHitBubble == false)
             {
+                // 나머지의 경우 계속 전진처리
                 _linePoints.Add(targetPos);
                 currentReflectionCount++;
                 currentOrigin = targetPos;
+                continue;
             }
 
             if (bHitHorizontalWall == true)
             {
-                // 벽충돌
-                //_linePoints.Add(targetPos);
-                //currentReflectionCount++;
-
                 // 벽에 부딪혔을 때 반사 방향 계산
                 currentDirection = Vector2.Reflect(currentDirection, currentDirection.x >= 0 ? Vector2.left : Vector2.right);
-                _SetTargetGo(false, 0, 0);
+                _SetTargetGoActive(false, 0, 0);
             }
         }
 
         // Line Renderer의 점 개수 설정 및 위치 업데이트
-        lineRenderer.positionCount = _linePoints.Count;
-        for (int i = 0; i < lineRenderer.positionCount; i++)
+        _lineRenderer.positionCount = _linePoints.Count;
+        for (int i = 0; i < _lineRenderer.positionCount; i++)
         {
             var pos = _linePoints.ElementAtOrDefault(i);
             if(pos != Vector2.zero)
             {
-                lineRenderer.SetPosition(i, pos);
+                _lineRenderer.SetPosition(i, pos);
             }
             else
             {
@@ -215,86 +224,99 @@ public class BubbleLauncher : MonoBehaviour
         }
     }
 
-    void _SetTargetGo(bool set, float x, float y)
+    /// <summary>
+    /// 도착 예정지역 표기의 Active 및 Position을 조정합니다.
+    /// </summary>
+    /// <param name="set">활성화여부</param>
+    /// <param name="x">x좌표</param>
+    /// <param name="y">y좌표</param>
+    void _SetTargetGoActive(bool set, float x, float y)
     {
         _targetGo.SetActive(set);
         _targetGo.transform.position = new Vector2(x,y);
     }
 
+    /// <summary>
+    /// 다음 버블을 장전합니다.
+    /// </summary>
     public void SpawnNewBubble()
     {
-        if (currentBubble != null)
+        if (_currentBubble != null)
             return;
 
-        currentBubble = nextBubble != null ? nextBubble : StageManager.Instance.BubbleManager.GetBubble();
+        _currentBubble = _nextBubble != null ? _nextBubble : StageManager.Instance.BubbleManager.GetBubble();
 
-        if (currentBubble != null && launchPoint != null)
+        if (_currentBubble != null && _launchPoint != null)
         {
-            currentBubble.transform.position = launchPoint.position;
-            currentBubble.transform.rotation = Quaternion.identity;
+            _currentBubble.transform.position = _launchPoint.position;
+            _currentBubble.transform.rotation = Quaternion.identity;
 
-            currentBubble.layer = LayerMask.NameToLayer("Default");
+            _canLaunch = true;
 
-            canLaunch = true;
-
-            // 버블의 타입을 설정한다.
-            if (nextBubble == null)
+            // 다음 버블도 없을떄는 현재 버블도 새로 생성됐음으로 초기화처리
+            if (_nextBubble == null)
             {
-                if (currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
+                if (_currentBubble.TryGetComponent<Bubble>(out var bubbleScript))
                 {
-                    bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL, (int)eBubbleType.FAIRY + 1)
-                        , (eBubbleColor)UnityEngine.Random.Range((int)eBubbleColor.RED, (int)eBubbleColor.BLUE + 1)
-                        , isLaunched: true);
+                    bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.BOMB),
+                            StageManager.Instance.BubbleManager.RandomBubbleColor(eBubbleColor.RED, eBubbleColor.BLUE));
                 }
             }
         }
         else
         {
+#if UNITY_EDITOR
             Debug.LogError("ObjectPoolManager 또는 발사 지점에 문제가 있습니다.");
+#endif
         }
 
-        nextBubble = StageManager.Instance.BubbleManager.GetBubble();
+        _nextBubble = StageManager.Instance.BubbleManager.GetBubble();
 
-        if (nextBubble != null && nextLaunchPoint != null)
+        if (_nextBubble != null && _nextLaunchPoint != null)
         {
-            nextBubble.transform.position = nextLaunchPoint.position;
-            nextBubble.transform.rotation = Quaternion.identity;
-
-            nextBubble.layer = LayerMask.NameToLayer("Default");
-
-            canLaunch = true;
+            _nextBubble.transform.position = _nextLaunchPoint.position;
+            _nextBubble.transform.rotation = Quaternion.identity;
 
             // 버블의 타입을 설정한다.
-            if (nextBubble.TryGetComponent<Bubble>(out var bubbleScript))
+            if (_nextBubble.TryGetComponent<Bubble>(out var bubbleScript))
             {
-                bubbleScript.SetType((eBubbleType)Random.Range((int)eBubbleType.NORMAL, (int)eBubbleType.FAIRY + 1)
-                    , (eBubbleColor)UnityEngine.Random.Range((int)eBubbleColor.RED, (int)eBubbleColor.BLUE + 1)
-                    , isLaunched: true);
+                bubbleScript.InitBubble(StageManager.Instance.BubbleManager.RandomBubbleType(eBubbleType.NORMAL, eBubbleType.BOMB),
+                        StageManager.Instance.BubbleManager.RandomBubbleColor(eBubbleColor.RED, eBubbleColor.BLUE));
             }
         }
         else
         {
+#if UNITY_EDITOR
             Debug.LogError("ObjectPoolManager 또는 발사 지점에 문제가 있습니다.");
+#endif
         }
     }
 
+    /// <summary>
+    /// 현재 장전된 버블 삭제
+    /// </summary>
     public void RemoveCurrentBubble()
     {
-        if(currentBubble != null)
+        if(_currentBubble != null)
         {
-            StageManager.Instance.BubbleManager.ReleaseBubble(currentBubble);
-            currentBubble = null;
+            StageManager.Instance.BubbleManager.ReleaseBubble(_currentBubble);
+            _currentBubble = null;
         }
     }
 
+    /// <summary>
+    /// 현재 장전된 버블 발사
+    /// </summary>
+    /// <param name="touchPosition"></param>
+    /// <returns></returns>
     bool LaunchBubble(Vector2 touchPosition)
     {
-        if (currentBubble == null) return false;
+        if (_currentBubble == null) return false;
 
         Vector3 worldTouchPosition = Camera.main.ScreenToWorldPoint(new Vector3(touchPosition.x, touchPosition.y, Camera.main.nearClipPlane));
         worldTouchPosition.z = 0;
 
-        Vector2 launchDirection = (worldTouchPosition - launchPoint.position).normalized;
+        Vector2 launchDirection = (worldTouchPosition - _launchPoint.position).normalized;
 
         if(launchDirection.y < 0)
         {
@@ -302,43 +324,48 @@ public class BubbleLauncher : MonoBehaviour
             return false;
         }
 
-        canLaunch = false;
+        _canLaunch = false;
 
-        currentBubble.layer = LayerMask.NameToLayer("Bubble");
-        //#TODO::LAUNCH
-        PathFollower pathFollower = currentBubble.AddComponent<PathFollower>();
-        BubblePath path = currentBubble.AddComponent<BubblePath>();
+        //버블경로설정
+        PathFollower pathFollower = _currentBubble.AddComponent<PathFollower>();
+        BubblePath path = _currentBubble.AddComponent<BubblePath>();
         path.pathPoints = _linePoints;
-        pathFollower.Initialize(path, launchForce, 0);
+        pathFollower.Initialize(path, _launchForce, 0);
 
-        currentBubble = null;
+        _currentBubble = null;
 
         return true;
     }
 
-    public void ChangeNextBubble()
+    /// <summary>
+    /// 다음 버블과 장전된 버블을 교체한다.
+    /// </summary>
+    public void SwitchCurrentAndNext()
     {
-        GameObject tempGO = currentBubble;
-        currentBubble = nextBubble;
-        nextBubble = tempGO;
+        GameObject tempGO = _currentBubble;
+        _currentBubble = _nextBubble;
+        _nextBubble = tempGO;
 
-        if (currentBubble != null && launchPoint != null)
+        if (_currentBubble != null && _launchPoint != null)
         {
-            currentBubble.transform.position = launchPoint.position;
-            currentBubble.transform.rotation = Quaternion.identity;
+            _currentBubble.transform.position = _launchPoint.position;
+            _currentBubble.transform.rotation = Quaternion.identity;
         }
-        if (nextBubble != null && nextLaunchPoint != null)
+        if (_nextBubble != null && _nextLaunchPoint != null)
         {
-            nextBubble.transform.position = nextLaunchPoint.position;
-            nextBubble.transform.rotation = Quaternion.identity;
+            _nextBubble.transform.position = _nextLaunchPoint.position;
+            _nextBubble.transform.rotation = Quaternion.identity;
         }
     }
 
-    public void ChangeCurrentBubble()
+    /// <summary>
+    /// 장전된 버블을 특수버블로 교체한다.
+    /// </summary>
+    public void ChangeCurrentBubbleToBomb()
     {
-        if(currentBubble.TryGetComponent<Bubble>(out var currentBubbleScript))
+        if(_currentBubble.TryGetComponent<Bubble>(out var currentBubbleScript))
         {
-            currentBubbleScript.SetType(eBubbleType.CAT_BOMB, eBubbleColor.SPECIAL, true);
+            currentBubbleScript.InitBubble(eBubbleType.CAT_BOMB, eBubbleColor.SPECIAL);
         }
     }
 }

@@ -25,9 +25,6 @@ public class GridManager : MonoBehaviour
         new Vector2Int(0, -1), new Vector2Int(1, -1), new Vector2Int(1, 0)
     };
 
-    public int offsetX = 0;
-    public int offsetY = 5;
-
     // 그리드 설정
     public int gridRows = 10;
     public int gridCols = 8;
@@ -80,12 +77,16 @@ public class GridManager : MonoBehaviour
     {
         if (col < 0 || col >= gridCols || row < 0 || row >= gridRows)
         {
+#if UNITY_EDITOR
             Debug.LogWarning($"GridManager: ({col},{row})는 유효하지 않은 그리드 위치입니다.");
+#endif
             return;
         }
         if (grid[col, row] != null)
         {
+#if UNITY_EDITOR
             Debug.LogWarning($"GridManager: ({col},{row}) 위치에 이미 버블이 있습니다.");
+#endif
 
             Vector2Int[] offsets = (row % 2 == 0) ? evenRowNeighbors : oddRowNeighbors;
             foreach (Vector2Int offset in offsets)
@@ -108,9 +109,11 @@ public class GridManager : MonoBehaviour
         grid[col, row] = bubble;
         activeBubbles[new Vector2Int(col, row)] = bubble;
 
-        // 버블의 월드 위치를 그리드에 맞게 설정 (버블의 Rigidbody2D는 Kinematic으로 설정)
+        // 버블의 월드 위치를 그리드에 맞게 설정
         bubble.transform.position = GetWorldPosition(col, row);
 
+        //발사된 버블이라면
+        //그리드에 놓여지면서 폭발검사진행
         if(isLaunched == true)
         {
             if (bubble.TryGetComponent<Bubble>(out var bubbleScript))
@@ -118,15 +121,15 @@ public class GridManager : MonoBehaviour
                 switch(bubbleScript.bubbleType)
                 {
                     case eBubbleType.CAT_BOMB:
-                        CatBombTypeProcess();
+                        _CatBombTypeProcess();
                         break;
                     case eBubbleType.BOMB:
-                        BombTypeProcess();
+                        _BombTypeProcess();
                         break;
                     case eBubbleType.FAIRY:
                     case eBubbleType.NORMAL:
                     default:
-                        NormalTypeProcess();
+                        _NormalTypeProcess();
                         break;
                 };
             }
@@ -134,25 +137,25 @@ public class GridManager : MonoBehaviour
 
         return;
 
-        void NormalTypeProcess()
+        void _NormalTypeProcess()
         {
-            var popList = FindMatchingBubbles(new Vector2Int(col, row));
-            ProcessPopList(popList , false);
+            var popList = _FindMatchingBubbles(new Vector2Int(col, row));
+            _ProcessPopList(popList , false);
         }
 
-        void CatBombTypeProcess()
+        void _CatBombTypeProcess()
         {
             var popList = FindBombRange(new Vector2Int(col, row), 2);
-            ProcessPopList(popList, true);
+            _ProcessPopList(popList, true);
         }
 
-        void BombTypeProcess()
+        void _BombTypeProcess()
         {
             var popList = FindBombRange(new Vector2Int(col, row), 1);
-            ProcessPopList(popList, true);
+            _ProcessPopList(popList, true);
         }
 
-        void ProcessPopList(List<GameObject> popList, bool unconditionally)
+        void _ProcessPopList(List<GameObject> popList, bool unconditionally)
         {
             popList = popList.Distinct().ToList();
             if (popList.Count >= 3 || unconditionally == true)
@@ -170,19 +173,23 @@ public class GridManager : MonoBehaviour
     /// </summary>
     /// <param name="startGridPos">탐색을 시작할 버블의 그리드 좌표</param>
     /// <returns>연결된 같은 색상 버블 GameObject 리스트</returns>
-    public List<GameObject> FindMatchingBubbles(Vector2Int startGridPos)
+    private List<GameObject> _FindMatchingBubbles(Vector2Int startGridPos)
     {
         GameObject startBubble = GetBubbleAtGrid(startGridPos.x, startGridPos.y);
         if (startBubble == null)
         {
-            // Debug.LogWarning($"FindMatchingBubbles: 시작 위치 ({startGridPos.x},{startGridPos.y})에 버블이 없습니다.");
-            return new List<GameObject>(); // 빈 리스트 반환
+#if UNITY_EDITOR
+            Debug.LogWarning($"FindMatchingBubbles: 시작 위치 ({startGridPos.x},{startGridPos.y})에 버블이 없습니다.");
+#endif
+            return new List<GameObject>();
         }
 
         var startBubbleController = startBubble.GetComponent<Bubble>();
         if (startBubbleController == null || startBubbleController.bubbleType == eBubbleType.NONE)
         {
-            // Debug.LogWarning($"FindMatchingBubbles: 시작 버블에 BubbleController가 없거나 색상이 없습니다.");
+#if UNITY_EDITOR
+            Debug.LogWarning($"FindMatchingBubbles: 시작 버블에 Bubble이 없거나 색상이 없습니다.");
+#endif
             return new List<GameObject>();
         }
 
@@ -232,19 +239,29 @@ public class GridManager : MonoBehaviour
         return matchingBubbles;
     }
 
+    /// <summary>
+    /// FindMatchBubble을 바탕으로 주변 n칸만큼 탐색하도록 수정한 함수
+    /// </summary>
+    /// <param name="startGridPos"></param>
+    /// <param name="range"></param>
+    /// <returns></returns>
     public List<GameObject> FindBombRange(Vector2Int startGridPos, int range)
     {
         GameObject startBubble = GetBubbleAtGrid(startGridPos.x, startGridPos.y);
         if (startBubble == null)
         {
-            // Debug.LogWarning($"FindMatchingBubbles: 시작 위치 ({startGridPos.x},{startGridPos.y})에 버블이 없습니다.");
+#if UNITY_EDITOR
+            Debug.LogWarning($"FindBombRange: 시작 위치 ({startGridPos.x},{startGridPos.y})에 버블이 없습니다.");
+#endif
             return new List<GameObject>(); // 빈 리스트 반환
         }
 
         var startBubbleController = startBubble.GetComponent<Bubble>();
         if (startBubbleController == null || startBubbleController.bubbleType == eBubbleType.NONE)
         {
-            // Debug.LogWarning($"FindMatchingBubbles: 시작 버블에 BubbleController가 없거나 색상이 없습니다.");
+#if UNITY_EDITOR
+            Debug.LogWarning($"FindBombRange: 시작 버블에 Bubble이 없거나 색상이 없습니다.");
+#endif
             return new List<GameObject>();
         }
 
@@ -319,25 +336,27 @@ public class GridManager : MonoBehaviour
             {
                 if(bubbleScript.bubbleType == eBubbleType.FAIRY)
                 {
-                    // TODO : 보스에게 데미지
+                    //보스에게 데미지
                     StageManager.Instance.DamageBoss(-5);
                 }
             }
 
-            // TODO: 버블 터지는 시각 효과/사운드 재생 (예: particle system, audio source)
-            // Debug.Log($"버블 터짐: {bubble.name} at {gridPos}");
+#if UNITY_EDITOR
+            Debug.Log($"버블 터짐: {bubble.name} at {gridPos}");
+#endif
         }
 
-        // TODO: 버블이 터진 후, 공중에 떠 있는 (지지되지 않는) 버블 찾기 로직 호출
-        FindFloatingBubbles();
+        // 공중에 뜬 버블 탐색
+        _FindFloatingBubbles();
 
-        _BubbleGeneration();
+        // 버블 생성
+        _RunBubbleRefill();
     }
 
     /// <summary>
     /// 터진 버블로 인해 지지점을 잃고 공중에 떠 있는 버블들을 찾아 떨어뜨립니다.
     /// </summary>
-    public void FindFloatingBubbles()
+    private void _FindFloatingBubbles()
     {
         // 최상단 줄 (gridRows - 1)부터 시작하여 모든 버블을 순회합니다.
         // 연결된 버블 그룹을 찾고, 그 그룹이 상단 벽(가장 높은 줄)에 닿아있는지 확인합니다.
@@ -355,7 +374,7 @@ public class GridManager : MonoBehaviour
                 if (currentBubble != null && !visited.Contains(currentBubble))
                 {
                     // 이 버블이 속한 연결된 그룹을 찾습니다 (색상 무관)
-                    List<GameObject> connectedGroup = FindConnectedGroup(new Vector2Int(c, r), visited);
+                    List<GameObject> connectedGroup = _FindConnectedGroup(new Vector2Int(c, r), visited);
 
                     // 이 그룹이 공중에 떠 있는지 확인
                     bool isFloating = true;
@@ -391,12 +410,10 @@ public class GridManager : MonoBehaviour
             {
                 if (floatingBubble.TryGetComponent<Bubble>(out var floatingBubbleScript))
                 {
-                    dropBubbleScript.SetType(floatingBubbleScript.bubbleType, floatingBubbleScript.bubbleColor, false);
+                    dropBubbleScript.InitBubble(floatingBubbleScript.bubbleType, floatingBubbleScript.bubbleColor);
                 }
             }
 
-            //#TODO :: DROP BUBBLE
-            //#TODO::LAUNCH
             List<Vector2> dropPath = new List<Vector2>();
             PathFollower pathFollower = dropBubble.AddComponent<PathFollower>();
             BubblePath path = dropBubble.AddComponent<BubblePath>();
@@ -411,7 +428,7 @@ public class GridManager : MonoBehaviour
     /// 특정 그리드 위치에서 시작하여 모든 연결된 버블 그룹을 찾습니다. (색상 무관)
     /// FindFloatingBubbles를 위한 헬퍼 함수.
     /// </summary>
-    private List<GameObject> FindConnectedGroup(Vector2Int startGridPos, HashSet<GameObject> visitedBubblesTracker)
+    private List<GameObject> _FindConnectedGroup(Vector2Int startGridPos, HashSet<GameObject> visitedBubblesTracker)
     {
         List<GameObject> connectedGroup = new List<GameObject>();
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
@@ -451,12 +468,6 @@ public class GridManager : MonoBehaviour
         return connectedGroup;
     }
 
-    private IEnumerator DelayedReturnToPool(GameObject bubble, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        StageManager.Instance.BubbleManager.ReleaseDropBubble(bubble);
-    }
-
 
     /// <summary>
     /// 특정 그리드 위치에서 버블을 제거합니다.
@@ -473,6 +484,7 @@ public class GridManager : MonoBehaviour
 
             if (isRelease == true)
             {
+                // 맵생성 경로상에서 제거 위함
                 foreach (var bubbleMaker in _bubbleMakerList)
                 {
                     bubbleMaker.ReleaseBubble(removedBubble);
@@ -480,13 +492,17 @@ public class GridManager : MonoBehaviour
 
                 if (isFloating == false)
                 {
-                    // TODO: 제거된 버블을 풀로 반환하거나 파괴하는 로직
                     StageManager.Instance.BubbleManager.ReleaseBubble(removedBubble);
                 }
             }
         }
     }
 
+    /// <summary>
+    /// 경로탐색시 그리드 주변에 버블이 있는지 찾기 위함
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
     public bool GetNearBubbleByPosition(Vector2 pos)
     {
         // 그리드의 원점을 기준으로 6섹션으로 나눈다음
@@ -506,7 +522,7 @@ public class GridManager : MonoBehaviour
         int section = -1;
         for (int i = 0; i < 6; i++)
         {
-            if(IsPointInTriangleBarycentric(pos, gridPos, hexCorners[i], hexCorners[(i+1)%6]) == true)
+            if(_IsPointInTriangleBarycentric(pos, gridPos, hexCorners[i], hexCorners[(i+1)%6]) == true)
             {
                 section = i;
             }
@@ -520,7 +536,6 @@ public class GridManager : MonoBehaviour
         for(int index = 0; index < 3; index++)
         {
             // 짝수냐 홀수냐에 따라서 영역이 달라짐
-            //(row % 2 == 0) ? evenRowNeighbors : oddRowNeighbors
             var checkGrid = gridAxis.y % 2 == 0 ? gridAxis + evenRowNeighbors[neighborIndex] : gridAxis + oddRowNeighbors[neighborIndex];
             if (GetBubbleAtGrid(checkGrid.x, checkGrid.y) == true)
             {
@@ -528,6 +543,7 @@ public class GridManager : MonoBehaviour
             }
             neighborIndex = (neighborIndex + 1) % 6;
         }
+
         return false;
     }
 
@@ -539,7 +555,7 @@ public class GridManager : MonoBehaviour
     /// <param name="b">삼각형의 두 번째 꼭짓점</param>
     /// <param name="c">삼각형의 세 번째 꼭짓점</param>
     /// <returns>점이 삼각형 내부에 있으면 true, 외부에 있으면 false</returns>
-    public static bool IsPointInTriangleBarycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+    private bool _IsPointInTriangleBarycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
     {
         // 꼭짓점 A를 기준으로 벡터를 만듭니다.
         Vector2 v0 = c - a; // AC 벡터
@@ -578,18 +594,22 @@ public class GridManager : MonoBehaviour
         return grid[col, row];
     }
 
-    public bool GetWallAtGrid(int col, int row)
-    {
-        if (col < 0 || col > gridCols || row < 0 || row > gridRows) return true;
-        return false;
-    }
-
+    /// <summary>
+    /// 가로벽에 있는지 확인합니다.
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
     public bool GetHorizontalWallAtPosition(Vector2 pos)
     {
         if (pos.x < MIN_AXIS_X || pos.x > MAX_AXIS_X) return true;
         return false;
     }
 
+    /// <summary>
+    /// 세로벽에 있는지 확인합니다.
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
     public bool GetVerticalWallAtPosition(Vector2 pos)
     {
         if (pos.y < MIN_AXIS_Y || pos.y > MAX_AXIS_Y) return true;
@@ -601,17 +621,10 @@ public class GridManager : MonoBehaviour
     /// </summary>
     public Vector2 GetWorldPosition(int col, int row)
     {
-        // 원래꺼
-        //float x = col * bubbleRadius * 2;
-        //float y = row * bubbleRadius * Mathf.Sqrt(3);
         float y = row * bubbleRadius * 1.5f;
         float x = row % 2 == 0 ?
             col * bubbleRadius * Mathf.Sqrt(3) :
             col * bubbleRadius * Mathf.Sqrt(3) - bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
-        //float x = col * bubbleRadius * 1.5f;
-       // float y = col % 2 == 0 ?
-        //    row * bubbleRadius * Mathf.Sqrt(3) :
-        //    row * bubbleRadius * Mathf.Sqrt(3) - bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
 
         return new Vector2(x, y);
     }
@@ -653,7 +666,9 @@ public class GridManager : MonoBehaviour
     {
         if (_bubbleMakerList == null || _bubbleMakerList.Count == 0)
         {
+#if UNITY_EDITOR
             Debug.LogWarning("BubbleSpawnManager: BubbleMaker 리스트가 비어 있습니다.");
+#endif
             return;
         }
 
@@ -665,22 +680,27 @@ public class GridManager : MonoBehaviour
             // 버블 생성 전 취소 요청이 있었는지 확인
             if (token.IsCancellationRequested)
             {
+#if UNITY_EDITOR
                 Debug.Log("MakeBubble: 취소 요청 감지, 버블 생성 중단.");
+#endif
                 return;
             }
         }
 
         foreach (var bubbleMaker in _bubbleMakerList)
         {
-            await _InitBubbleBubbleMaker(bubbleMaker);
+            await _InitBubbleByBubbleMaker(bubbleMaker);
         }
 
+#if UNITY_EDITOR
         Debug.Log("모든 버블 메이커의 초기 버블 생성이 완료되었습니다.");
+#endif
     }
 
-    private async Task _InitBubbleBubbleMaker(BubbleMaker bubbleMaker)
+
+    private async Task _InitBubbleByBubbleMaker(BubbleMaker bubbleMaker)
     {
-        for (int i = 0; i < bubbleMaker.BubblePathCount; i++) // 각 maker당 5개의 버블 생성
+        for (int i = 0; i < bubbleMaker.BubblePathCount; i++)
         {
             bubbleMaker.MakeBubble();
             // 각 버블 생성 후 일정 시간 대기
@@ -688,18 +708,27 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    async void _BubbleGeneration()
+    /// <summary>
+    /// 버블 리필
+    /// </summary>
+    async void _RunBubbleRefill()
     {
         StageManager.Instance.ProgressGridProcess();
         await _RefillBubble();
         StageManager.Instance.CompleteGridProcess();
     }
 
-    private async Task _RefillBubble() // async UniTask로 변경하여 await 가능하게 함
+    /// <summary>
+    /// 버블 리필 로직
+    /// </summary>
+    /// <returns></returns>
+    private async Task _RefillBubble()
     {
         if (_bubbleMakerList == null || _bubbleMakerList.Count == 0)
         {
+#if UNITY_EDITOR
             Debug.LogWarning("BubbleSpawnManager: BubbleMaker 리스트가 비어 있습니다.");
+#endif
             return;
         }
 
@@ -711,7 +740,9 @@ public class GridManager : MonoBehaviour
             // 버블 생성 전 취소 요청이 있었는지 확인
             if (token.IsCancellationRequested)
             {
+#if UNITY_EDITOR
                 Debug.Log("MakeBubble: 취소 요청 감지, 버블 생성 중단.");
+#endif
                 return;
             }
         }

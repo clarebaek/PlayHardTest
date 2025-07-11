@@ -6,55 +6,66 @@ using UnityEngine.U2D;
 
 public class Bubble : MonoBehaviour
 {
+    [Header("보통의 경우")]
     [SerializeField]
     GameObject _normalTypeGO;
     [SerializeField]
     SpriteRenderer _normalTypeImage;
+    [Header("요정형태 이미지")]
     [SerializeField]
     GameObject _fairyTypeGO;
-    public SpriteAtlas targetAtlas;
+    [Header("폭탄형태 이미지")]
+    [SerializeField]
+    GameObject _bombTypeGO;
 
-    private bool _isLaunched;
+    [Header("아틀라스")]
+    [SerializeField]
+    private SpriteAtlas _targetAtlas;
+
     public eBubbleType bubbleType { get; private set; }
     public eBubbleColor bubbleColor { get; private set; }
 
-    private void _SetData()
-    {
-
-    }
-
-    public void SetType(eBubbleType type, eBubbleColor color,bool isLaunched = false)
+    /// <summary>
+    /// 버블을 초기화합니다.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="color"></param>
+    public void InitBubble(eBubbleType type, eBubbleColor color)
     {
         bubbleType = type;
         bubbleColor = color;
-        _isLaunched = isLaunched;
         _SetView();
     }
 
+    /// <summary>
+    /// 버블의 출력을 갱신합니다.
+    /// </summary>
     private void _SetView()
     {
+        _normalTypeGO.SetActive(bubbleType != eBubbleType.BOMB);
         _fairyTypeGO.SetActive(bubbleType == eBubbleType.FAIRY);
+        _bombTypeGO.SetActive(bubbleType == eBubbleType.BOMB);
 
-        if(_normalTypeImage.TryGetComponent<SpriteRenderer>(out var sprite))
+        if (bubbleType != eBubbleType.BOMB)
         {
-            sprite.sprite = bubbleColor switch
+            if (_normalTypeImage.TryGetComponent<SpriteRenderer>(out var sprite))
             {
-                eBubbleColor.RED => targetAtlas.GetSprite("celery_0"),
-                eBubbleColor.YELLOW => targetAtlas.GetSprite("onion_0"),
-                eBubbleColor.BLUE => targetAtlas.GetSprite("riceball_0"),
-                eBubbleColor.SPECIAL => targetAtlas.GetSprite("bomb_0"),
-                _ => targetAtlas.GetSprite("onion_0"),
-            };
+                sprite.sprite = bubbleColor switch
+                {
+                    eBubbleColor.RED => _targetAtlas.GetSprite("celery_0"),
+                    eBubbleColor.YELLOW => _targetAtlas.GetSprite("onion_0"),
+                    eBubbleColor.BLUE => _targetAtlas.GetSprite("riceball_0"),
+                    eBubbleColor.SPECIAL => _targetAtlas.GetSprite("bomb_0"),
+                    _ => _targetAtlas.GetSprite("onion_0"),
+                };
+            }
         }
     }
 
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        // 오브젝트가 선택되지 않아도 항상 Gizmo가 보이도록
-        // 텍스트 색상 설정
         Handles.color = Color.red;
-        // 텍스트를 오브젝트의 위치에 오프셋을 더하여 그립니다.
         var gridPos = StageManager.Instance.GridManager.GetGridPosition(this.transform.position);
         Handles.Label(transform.position, $"{gridPos}");
     }
