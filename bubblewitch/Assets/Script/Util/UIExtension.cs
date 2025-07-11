@@ -12,6 +12,7 @@ namespace UnityEngine.UI.Extensions
             if (btn == null)
             {
                 Debug.LogError("btn is null");
+                return;
             }
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(callback);

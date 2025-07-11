@@ -13,13 +13,13 @@ public class GridManager : MonoBehaviour
      /// 육각형 그리드에서 인접한 버블의 상대적 오프셋 좌표 (Odd-r Offset)
      /// 현재 행 (row)이 짝수인지 홀수인지에 따라 다릅니다.
      /// </summary>
-    private static readonly Vector2Int[] oddRowNeighbors = new Vector2Int[]
+    private static readonly Vector2Int[] evenRowNeighbors = new Vector2Int[]
     {
         new Vector2Int(0, 1), new Vector2Int(-1, 1), new Vector2Int(-1, 0),
         new Vector2Int(-1, -1), new Vector2Int(0, -1), new Vector2Int(1, 0)
     };
 
-    private static readonly Vector2Int[] evenRowNeighbors = new Vector2Int[]
+    private static readonly Vector2Int[] oddRowNeighbors = new Vector2Int[]
     {
         new Vector2Int(1, 1), new Vector2Int(0, 1), new Vector2Int(-1, 0),
         new Vector2Int(0, -1), new Vector2Int(1, -1), new Vector2Int(1, 0)
@@ -30,10 +30,14 @@ public class GridManager : MonoBehaviour
     public int gridCols = 8;
     public float bubbleRadius = 0.5f; // 실제 버블의 반지름
 
+    [Header("벽 영역 설정을 위함")]
     public float MIN_AXIS_X;
     public float MAX_AXIS_X;
     public float MIN_AXIS_Y;
     public float MAX_AXIS_Y;
+
+    public float offset_x;
+    public float offset_y;
 
     // 그리드에 버블을 저장할 2차원 배열 (GameObject는 버블 인스턴스)
     // null은 빈 칸을 의미
@@ -112,9 +116,11 @@ public class GridManager : MonoBehaviour
         // 버블의 월드 위치를 그리드에 맞게 설정
         bubble.transform.position = GetWorldPosition(col, row);
 
+        StageManager.Instance.ChangeRowCount(row, 1);
+
         //발사된 버블이라면
         //그리드에 놓여지면서 폭발검사진행
-        if(isLaunched == true)
+        if (isLaunched == true)
         {
             if (bubble.TryGetComponent<Bubble>(out var bubbleScript))
             {
@@ -352,7 +358,7 @@ public class GridManager : MonoBehaviour
                 if(bubbleScript.bubbleType == eBubbleType.FAIRY)
                 {
                     //보스에게 데미지
-                    StageManager.Instance.DamageBoss(-5);
+                    StageManager.Instance.DamageBoss();
                 }
             }
 
@@ -381,7 +387,7 @@ public class GridManager : MonoBehaviour
         List<GameObject> floatingBubbles = new List<GameObject>();
 
         // 그리드 전체를 순회하면서 모든 활성 버블을 확인
-        for (int r = gridRows - 1; r >= 0; r--) // 위에서 아래로
+        for (int r = 0; r < gridRows; r++) // 아래에서 위로
         {
             for (int c = 0; c < gridCols; c++)
             {
@@ -396,7 +402,7 @@ public class GridManager : MonoBehaviour
                     foreach (GameObject bubbleInGroup in connectedGroup)
                     {
                         Vector2Int groupBubblePos = GetGridPosition(bubbleInGroup.transform.position);
-                        if (groupBubblePos.y >= gridRows - 1) // 가장 높은 줄에 닿아있는 버블이 그룹 내에 있다면
+                        if (groupBubblePos.y <= 0) // 가장 높은 줄에 닿아있는 버블이 그룹 내에 있다면
                         {
                             isFloating = false; // 이 그룹은 공중에 떠 있지 않음
                             break;
@@ -493,6 +499,8 @@ public class GridManager : MonoBehaviour
 
         if (grid[col, row] != null)
         {
+            StageManager.Instance.ChangeRowCount(row, -1);
+
             GameObject removedBubble = grid[col, row];
             grid[col, row] = null;
             activeBubbles.Remove(new Vector2Int(col, row));
@@ -540,8 +548,8 @@ public class GridManager : MonoBehaviour
             if(_IsPointInTriangleBarycentric(pos, gridPos, hexCorners[i], hexCorners[(i+1)%6]) == true)
             {
                 section = i;
+                break;
             }
-            break;
         }
 
         // 각 섹션별로 인접한 그리드에 버블이 있는지 체크한다.
@@ -636,10 +644,10 @@ public class GridManager : MonoBehaviour
     /// </summary>
     public Vector2 GetWorldPosition(int col, int row)
     {
-        float y = row * bubbleRadius * 1.5f;
+        float y = offset_y - row * bubbleRadius * 1.5f;
         float x = row % 2 == 0 ?
-            col * bubbleRadius * Mathf.Sqrt(3) :
-            col * bubbleRadius * Mathf.Sqrt(3) - bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
+            offset_x + col * bubbleRadius * Mathf.Sqrt(3) :
+            offset_x + col * bubbleRadius * Mathf.Sqrt(3) + bubbleRadius * 0.5f * Mathf.Sqrt(3); // 겹치는 부분 고려
 
         return new Vector2(x, y);
     }
@@ -653,12 +661,12 @@ public class GridManager : MonoBehaviour
         // RedBlobGames Hex Grid 공식 활용 (Offset Coordinates)
         // https://www.redblobgames.com/grids/hexagons/
 
-        float roughRow = worldPosition.y / (bubbleRadius * 1.5f);
+        float roughRow = (offset_y - worldPosition.y) / (bubbleRadius * 1.5f);
         int row = Mathf.RoundToInt(roughRow);
 
         float roughCol = row % 2 == 0 ?
-            worldPosition.x / (bubbleRadius * Mathf.Sqrt(3)) :
-            worldPosition.x / (bubbleRadius * Mathf.Sqrt(3)) + 0.5f;
+            (worldPosition.x - offset_x) / (bubbleRadius * Mathf.Sqrt(3)) :
+            (worldPosition.x - offset_x) / (bubbleRadius * Mathf.Sqrt(3)) - 0.5f;
         int col = Mathf.RoundToInt(roughCol);
 
         return new Vector2Int(col, row);
@@ -813,15 +821,6 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-
-        // 현재 버블 발사 지점 표시 (선택 사항)
-        // BubbleLauncher에서 launchPoint를 참조하고 있다면 여기서도 그릴 수 있습니다.
-        // 또는 BubbleLauncher.cs의 OnDrawGizmos에서 그려도 됩니다.
-        // if (GetComponent<BubbleLauncher>() != null && GetComponent<BubbleLauncher>().launchPoint != null)
-        // {
-        //     Gizmos.color = Color.red;
-        //     Gizmos.DrawSphere(GetComponent<BubbleLauncher>().launchPoint.position, 0.2f);
-        // }
     }
 #endif
 }

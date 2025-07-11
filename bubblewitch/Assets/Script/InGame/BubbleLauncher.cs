@@ -136,6 +136,7 @@ public class BubbleLauncher : MonoBehaviour
         {
             _lineRenderer.enabled = false; // 너무 아래로 조준하면 선을 그리지 않음
             _lineRenderer.positionCount = 0;
+            _SetTargetGoActive(false, 0, 0);
             return;
         }
 
@@ -366,6 +367,18 @@ public class BubbleLauncher : MonoBehaviour
         if(_currentBubble.TryGetComponent<Bubble>(out var currentBubbleScript))
         {
             currentBubbleScript.InitBubble(eBubbleType.CAT_BOMB, eBubbleColor.SPECIAL);
+        }
+    }
+
+    public void AddBubblePos(Vector3 pos)
+    {
+        if (_currentBubble != null)
+        {
+            _currentBubble.transform.position += new Vector3(0, pos.y, 0);
+        }
+        if (_nextBubble != null)
+        {
+            _nextBubble.transform.position += new Vector3(0, pos.y, 0);
         }
     }
 }
