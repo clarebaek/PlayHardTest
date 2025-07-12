@@ -121,6 +121,7 @@ public class StageManager : MonoSingleton<StageManager>
     {
         _catBtn.interactable = set;
         _changeBtn.interactable = set;
+        _retryBtn.interactable = set;
     }
 
     public void DamageBoss()
