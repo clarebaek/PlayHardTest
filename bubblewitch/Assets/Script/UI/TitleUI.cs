@@ -15,6 +15,6 @@ public class TitleUI : MonoBehaviour
 
     private void _OnClickStartBtn()
     {
-        SceneManager.LoadScene("Title");
+        SceneManager.LoadScene("InGame");
     }
 }
